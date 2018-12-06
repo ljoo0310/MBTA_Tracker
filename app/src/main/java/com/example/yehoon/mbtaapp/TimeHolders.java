@@ -5,11 +5,11 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class ScheduleHolders extends RecyclerView.ViewHolder {
+public class TimeHolders extends RecyclerView.ViewHolder {
     public TextView tv_departureTime, tv_arrivalTime;
     public LinearLayout linLay_schedule;
 
-    public ScheduleHolders(final View itemView) {
+    public TimeHolders(final View itemView) {
         super(itemView);
 
         linLay_schedule = (LinearLayout) itemView.findViewById(R.id.linLay_schedule);

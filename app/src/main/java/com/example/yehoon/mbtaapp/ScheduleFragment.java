@@ -8,16 +8,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ProgressBar;
-
-import java.util.ArrayList;
 
 public class ScheduleFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private ScheduleAdapter recyclerViewAdapter;
+    private TimeAdapter recyclerViewAdapter;
     private static String[] scheduleDepartures, scheduleArrivals;
 
     @Override
@@ -32,17 +27,16 @@ public class ScheduleFragment extends Fragment {
 
     private void fetchResources() {
         Resources res = getResources();
-        scheduleDepartures = res.getStringArray(R.array.scheduleDepartures);
-        scheduleArrivals = res.getStringArray(R.array.scheduleArrivals);
+        scheduleDepartures = res.getStringArray(R.array.fragmentDepartureTimes);
+        scheduleArrivals = res.getStringArray(R.array.fragmentArrivalTimes);
     }
 
     private void setupRecyclerView(View rootView) {
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        recyclerViewAdapter = new ScheduleAdapter(scheduleDepartures, scheduleArrivals);
+        recyclerViewAdapter = new TimeAdapter(scheduleDepartures, scheduleArrivals);
         recyclerView.setAdapter(recyclerViewAdapter);
     }
-
 }
 
 

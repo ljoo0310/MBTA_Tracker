@@ -27,12 +27,11 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Start Stop"
+                android:text="Departure Time"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/tv_arrow"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.1"
@@ -44,7 +43,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="End Stop"
+                android:text="Arrival Time"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
         </LinearLayout>
