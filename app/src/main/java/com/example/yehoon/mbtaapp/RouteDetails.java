@@ -1,19 +1,21 @@
 package com.example.yehoon.mbtaapp;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class RouteDetails extends AppCompatActivity {
@@ -28,6 +30,7 @@ public class RouteDetails extends AppCompatActivity {
         // check if adding or editing a route
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
+        assert bundle != null;
         boolean isNewRoute = bundle.getBoolean("newRoute");
         if(!isNewRoute) { // editing an existing route
             route = (Route) bundle.getSerializable("route");
@@ -39,8 +42,29 @@ public class RouteDetails extends AppCompatActivity {
         initButton();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.menu_map, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_favorite:
+                Toast.makeText(this, "Map button pressed", Toast.LENGTH_SHORT).show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     private void initToolbar() {
-        setSupportActionBar((Toolbar) findViewById(R.id.my_toolbar));
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_activity);
+        setSupportActionBar(toolbar);
+        ActionBar ab = getSupportActionBar();
+        ab.setDisplayHomeAsUpEnabled(true);
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
     }
 
@@ -116,14 +140,12 @@ public class RouteDetails extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if(position == 0) {
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.GRAY);
                     spnStart.setEnabled(false);
                     spnEnd.setEnabled(false);
                     spnStart.setSelection(0);
                     spnEnd.setSelection(0);
                 }
                 else {
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
                     spnStart.setEnabled(true);
                     spnEnd.setEnabled(true);
                 }
@@ -131,32 +153,6 @@ public class RouteDetails extends AppCompatActivity {
 
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {}
-        });
-
-        spnStart.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(position == 0)
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.GRAY);
-                else
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        spnEnd.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(position == 0)
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.GRAY);
-                else
-                    ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
