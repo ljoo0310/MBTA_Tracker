@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">MBTA Tracker</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">MBTA Tracker</string>
+    <string name="nav_header_subtitle">Luke Joo</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="tab_label1">Schedule</string>
+    <string name="tab_label2">Prediction</string>
+
+    <string-array name="startStops">
+        <item>Boston College</item>
+        <item>South St.</item>
+        <item>Copley</item>
+    </string-array>
+    <string-array name="endStops">
+        <item>Harvard Ave.</item>
+        <item>BU West</item>
+        <item>Babcock St.</item>
+    </string-array>
+    <string-array name="departureTimes">
+        <item>00:00:00\n22:22:22\n44:44:44</item>
+        <item>00:00:00\n22:22:22\n44:44:44</item>
+        <item>00:00:00\n22:22:22\n44:44:44</item>
+    </string-array>
+    <string-array name="arrivalTimes">
+        <item>11:11:11\n33:33:33\n55:55:55</item>
+        <item>11:11:11\n33:33:33\n55:55:55</item>
+        <item>11:11:11\n33:33:33\n55:55:55</item>
+    </string-array>
+
+    <string-array name="transits">
+        <item>Choose</item>
+        <item>Green - B Line</item>
+        <item>Green - C Line</item>
+        <item>Green - D Line</item>
+        <item>Green - E Line</item>
+    </string-array>
+    <string-array name="startStopsSpinner">
+        <item>Choose</item>
+        <item>Boston College</item>
+        <item>South St.</item>
+        <item>Copley</item>
+    </string-array>
+    <string-array name="endStopsSpinner">
+        <item>Choose</item>
+        <item>Harvard Ave.</item>
+        <item>BU West</item>
+        <item>Babcock St.</item>
+    </string-array>
+</resources>

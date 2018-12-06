@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">NavigationDrawerRecyclerView</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string-array name="items">
+        <item>Per favore</item>
+        <item>Grazie</item>
+        <item>Prego</item>
+        <item>Mi scusi</item>
+        <item>Mi dispiace</item>
+
+        <item>Buon giorno</item>
+        <item>Buona sera</item>
+        <item>Buona notte</item>
+        <item>C è qualcuno che parla inglese?</item>
+        <item>Come si chiama, Lei?</item>
+
+        <item>Come sta?</item>
+        <item>È stato un piacere conoscerla</item>
+        <item>Scusi, che cosa ha detto?</item>
+        <item>Capisco benissimo</item>
+        <item>Buona giornata!</item>
+
+        <item>Parla inglese?</item>
+        <item>No, mi dispiace, ma non lo parlo.</item>
+        <item>Mi innervosisco sempre quando parlo in italiano.</item>
+        <item>Non fa niente.</item>
+        <item>So soltanto un po' di italiano.</item>
+
+    </string-array>
+</resources>
