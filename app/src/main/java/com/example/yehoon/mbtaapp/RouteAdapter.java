@@ -24,7 +24,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
 
     @Override
     public RouteHolders onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_item_main, parent, false);
         RouteHolders viewHolder = new RouteHolders(view);
         return viewHolder;
     }
@@ -51,10 +51,8 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         holder.linLay_visible.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            Toast.makeText(context, "Clicked on tv_startStop.", Toast.LENGTH_SHORT).show();
             // show hidden row details
             if (holder.linLay_hidden.getVisibility() != View.VISIBLE) {
-                Toast.makeText(context, "Departure/Arrival times are now visible.", Toast.LENGTH_SHORT).show();
                 holder.linLay_hidden.setVisibility(View.VISIBLE);
                 holder.tv_departureTime.setVisibility(View.VISIBLE);
                 holder.tv_departureTime.setEnabled(true);
@@ -67,7 +65,6 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
             }
             // hide hidden row details
             else {
-                Toast.makeText(context, "Departure/Arrival times are now hidden.", Toast.LENGTH_SHORT).show();
                 holder.linLay_hidden.setVisibility(View.INVISIBLE);
                 holder.tv_departureTime.setVisibility(View.INVISIBLE);
                 holder.tv_departureTime.setEnabled(false);
@@ -104,8 +101,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (which == 0) { // edit route
-                    showRouteDetails(routes.get(position)); //, position);
-                    //editRoute(position);
+                    showRouteDetails(routes.get(position));
                 } else { // delete route
                     deleteRoute(position);
                 }
@@ -127,41 +123,5 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         Toast.makeText(context, " Deleting route #:" + position, Toast.LENGTH_SHORT).show();
         // new DatabaseAsync(MainActivity.this).execute(null, position, null, null, null);
     }
-    /*
-    public void showActionsDialog(final int position) {
-        CharSequence colors[] = new CharSequence[]{"Edit", "Delete"};
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Choose option");
-        builder.setItems(colors, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if (which == 0) {
-                    //edit the route
-                    showRouteDetails(false, routes.get(position), position);
-                }
-                else {
-                    //delete route from database
-                    deleteRoute(position);
-                }
-            }
-        });
-        builder.show();
-    }
-    */
-    /*
-    private void deleteRoute(int position) {
-        // new DatabaseAsync(MainActivity.this).execute(null, position, null, null, null);
-    }
-    */
-    /*
-    private void showRouteDetails(boolean newRoute, Route route, int position) {
-        Intent intent = new Intent(context, RouteDetails.class);
-        Bundle data = new Bundle();
-        data.putInt("myRequestCode", 101);
-        data.putBoolean("newRoute", newRoute);
-        intent.putExtras(data);
-        startActivityForResult(intent, 101);
-    }
-    */
 }

@@ -21,9 +21,9 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private RecyclerView recyclerView;
-    private ArrayList<Route> routes = new ArrayList<Route>();
     private RouteAdapter recyclerViewAdapter;
-    private static String[] transits, startStops, endStops, departureTimes, arrivalTimes;
+    private ArrayList<Route> routes = new ArrayList<Route>();
+    private static String[] startStops, endStops, departureTimes, arrivalTimes, schedules;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +56,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        Resources res = getResources();
-        transits = res.getStringArray(R.array.transits);
-        startStops = res.getStringArray(R.array.startStops);
-        endStops = res.getStringArray(R.array.endStops);
-        departureTimes = res.getStringArray(R.array.departureTimes);
-        arrivalTimes = res.getStringArray(R.array.arrivalTimes);
-
-        initControls();
+        fetchResources();
+        getRoutes();
+        setupRecyclerView();
     }
 
     @Override
@@ -97,33 +92,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
-    private void initControls() {
+    private void fetchResources() {
+        Resources res = getResources();
+        startStops = res.getStringArray(R.array.startStops);
+        endStops = res.getStringArray(R.array.endStops);
+        departureTimes = res.getStringArray(R.array.departureTimes);
+        arrivalTimes = res.getStringArray(R.array.arrivalTimes);
+    }
+
+    private void getRoutes() {
         int size = startStops.length;
         for (int i = 0; i< size; i++) {
-            routes.add(new Route(transits[0], startStops[i], endStops[i], departureTimes[i],
-                    arrivalTimes[i],
-                    0, i, i, i, i));
+            routes.add(new Route(startStops[i], endStops[i], departureTimes[i], arrivalTimes[i],
+                    0, i, i));
         }
+    }
 
+    private void setupRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewAdapter = new RouteAdapter(this, routes);
         recyclerView.setAdapter(recyclerViewAdapter);
     }
 
-    /*
-    private void editRoute(int position) {
-        Toast.makeText(MainActivity.this, " Editing route #:" + position, Toast.LENGTH_SHORT).show();
-        Intent intent_edit = new Intent(MainActivity.this, RouteDetails.class);
-        Bundle bundle_edit = new Bundle();
-        bundle_edit.putSerializable("route", routes.get(position));
-        intent_edit.putExtras(bundle_edit);
-        startActivity(intent_edit);
-    }
-    */
-    /*
-    private void deleteRoute(int position) {
-        Toast.makeText(MainActivity.this, " Deleting route #:" + position, Toast.LENGTH_SHORT).show();
-    }
-    */
 }

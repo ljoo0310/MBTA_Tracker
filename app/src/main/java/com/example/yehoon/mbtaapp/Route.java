@@ -4,14 +4,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Route implements Serializable {
-    private String transit, startStop, endStop, departureTime, arrivalTime;
-    private int transit_id, startStop_id, endStop_id, departureTime_id, arrivalTime_id;
+    private String startStop, endStop, departureTime, arrivalTime;
+    private int transit_id, startStop_id, endStop_id;
 
-    public Route(String transit, String startStop, String endStop, String departureTime,
-                 String arrivalTime,
-                 int transit_id, int startStop_id, int endStop_id, int departureTime_id,
-                 int arrivalTime_id) {
-        this.transit = transit;
+    public Route(String startStop, String endStop, String departureTime, String arrivalTime,
+                 int transit_id, int startStop_id, int endStop_id) {
         this.startStop = startStop;
         this.endStop = endStop;
         this.departureTime = departureTime;
@@ -19,8 +16,6 @@ public class Route implements Serializable {
         this.transit_id = transit_id;
         this.startStop_id = startStop_id;
         this.endStop_id = endStop_id;
-        this.departureTime_id = departureTime_id;
-        this.arrivalTime_id = arrivalTime_id;
     }
 
     public String getStartStop() {
