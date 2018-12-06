@@ -104,7 +104,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (which == 0) { // edit route
-                    showRouteDetails(false, routes.get(position)); //, position);
+                    showRouteDetails(routes.get(position)); //, position);
                     //editRoute(position);
                 } else { // delete route
                     deleteRoute(position);
@@ -114,10 +114,10 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         builder.show();
     }
 
-    private void showRouteDetails(boolean newRoute, Route route) { //, int position) {
+    private void showRouteDetails(Route route) { //, int position) {
         Intent intent = new Intent(context, RouteDetails.class);
         Bundle bundle = new Bundle();
-        bundle.putBoolean("newRoute", newRoute);
+        bundle.putBoolean("newRoute", false);
         bundle.putSerializable("route", route);
         intent.putExtras(bundle);
         context.startActivity(intent);

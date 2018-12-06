@@ -39,8 +39,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent addIntent = new Intent(MainActivity.this, RouteDetails.class);
-                startActivity(addIntent);
+                Intent intent = new Intent(MainActivity.this, RouteDetails.class);
+                Bundle bundle = new Bundle();
+                bundle.putBoolean("newRoute", true);
+                intent.putExtras(bundle);
+                startActivity(intent);
             }
         });
 
