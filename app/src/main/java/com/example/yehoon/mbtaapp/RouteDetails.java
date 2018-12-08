@@ -181,6 +181,10 @@ public class RouteDetails extends AppCompatActivity {
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
                     new DatabaseAsync(RouteDetails.this).execute("new", 0, start, end);
+                    Intent intent = new Intent(RouteDetails.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
                 }
             }
         });
