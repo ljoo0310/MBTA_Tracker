@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import java.util.List;
+import java.util.Random;
 
 public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
     private List<Route> routes;
@@ -31,11 +32,15 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
 
     @Override
     public void onBindViewHolder(final RouteHolders holder, final int position) {
+        // temporary random times
+        final String departure = randomTime() + "\n" + randomTime() + "\n" + randomTime();
+        final String arrival = randomTime() + "\n" + randomTime() + "\n" + randomTime();
+
         // setup for visible portion of row item
         holder.tv_startStop.setText(routes.get(position).getStartStop());
         holder.tv_endStop.setText(routes.get(position).getEndStop());
-        holder.tv_departureTime.setText(routes.get(position).getDepartureTime());
-        holder.tv_arrivalTime.setText(routes.get(position).getArrivalTime());
+        holder.tv_departureTime.setText(departure);
+        holder.tv_arrivalTime.setText(arrival);
 
         // setup for hidden portion of row item
         holder.linLay_hidden.setVisibility(View.INVISIBLE);
@@ -56,12 +61,12 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
                 holder.linLay_hidden.setVisibility(View.VISIBLE);
                 holder.tv_departureTime.setVisibility(View.VISIBLE);
                 holder.tv_departureTime.setEnabled(true);
-                holder.tv_departureTime.setText(routes.get(position).getDepartureTime());
+                holder.tv_departureTime.setText(departure);
                 holder.tv_arrow2.setVisibility(View.VISIBLE);
                 holder.tv_arrow2.setEnabled(true);
                 holder.tv_arrivalTime.setVisibility(View.VISIBLE);
                 holder.tv_arrivalTime.setEnabled(true);
-                holder.tv_arrivalTime.setText(routes.get(position).getArrivalTime());
+                holder.tv_arrivalTime.setText(arrival);
             }
             // hide hidden row details
             else {
@@ -126,5 +131,13 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
 
     public void setRoutes(List<Route> routes) {
         this.routes = routes;
+    }
+
+    private String randomTime() {
+        return "" + randomInt() + randomInt() + ":" + randomInt() + randomInt() + ":" + randomInt() + randomInt();
+    }
+
+    private int randomInt() {
+        return new Random().nextInt(10);
     }
 }
