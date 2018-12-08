@@ -10,13 +10,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
 import java.util.Random;
 
-public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
+public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder> {
     private List<Route> routes;
+    private ClickListener clickListener;
     protected Context context;
 
     public RouteAdapter(Context context, List<Route> routes) {
@@ -24,15 +27,44 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         this.routes = routes;
     }
 
+    public class RouteHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener {
+        public LinearLayout linLay_visible, linLay_hidden;
+        public TextView tv_startStop, tv_arrow, tv_endStop, tv_departureTime, tv_arrow2, tv_arrivalTime;
+
+        public RouteHolder(final View itemView) {
+            super(itemView);
+
+            itemView.setOnLongClickListener(this);
+
+            // initializations for visible portion of row item
+            linLay_visible = (LinearLayout) itemView.findViewById(R.id.linLay_visible);
+            tv_startStop = (TextView) itemView.findViewById(R.id.tv_startStop);
+            tv_arrow = (TextView) itemView.findViewById(R.id.tv_arrow);
+            tv_endStop = (TextView) itemView.findViewById(R.id.tv_endStop);
+
+            // initialization for hidden portion of row itme
+            linLay_hidden = (LinearLayout) itemView.findViewById(R.id.linLay_hidden);
+            tv_departureTime = (TextView) itemView.findViewById(R.id.tv_departureTime);
+            tv_arrow2 = (TextView) itemView.findViewById(R.id.tv_arrow2);
+            tv_arrivalTime = (TextView) itemView.findViewById(R.id.tv_arrivalTime);
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            if (clickListener != null) clickListener.onLongClick(v, getAdapterPosition());
+            return false;
+        }
+    }
+
     @Override
-    public RouteHolders onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RouteHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.row_item_main, parent, false);
-        RouteHolders viewHolder = new RouteHolders(view);
+        RouteHolder viewHolder = new RouteHolder(view);
         return viewHolder;
     }
 
     @Override
-    public void onBindViewHolder(final RouteHolders holder, final int position) {
+    public void onBindViewHolder(final RouteHolder holder, final int position) {
         // temporary random times
         final String departure = randomTime() + "\n" + randomTime() + "\n" + randomTime();
         final String arrival = randomTime() + "\n" + randomTime() + "\n" + randomTime();
@@ -83,7 +115,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
             }
             }
         });
-
+        /*
         holder.linLay_visible.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
@@ -91,13 +123,14 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
                 return true;
             }
         });
+        */
     }
 
     @Override
     public int getItemCount() {
         return routes.size();
     }
-
+    /*
     public void showActionsDialog(final int position) {
         CharSequence colors[] = new CharSequence[]{"Edit", "Delete"};
 
@@ -130,9 +163,20 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
     private void deleteRoute(int position) {
         new DatabaseAsync(context).execute("delete", position, null, null, 0, 0, 0);
     }
-
+    */
     public void setRoutes(List<Route> routes) {
         this.routes = routes;
+    }
+
+    // allows clicks events to be caught
+    void setClickListener(ClickListener clickListener) {
+        this.clickListener = clickListener;
+    }
+
+    public interface ClickListener {
+        void onClick(View view, int position);
+
+        void onLongClick(View view, int position);
     }
 
     private String randomTime() {

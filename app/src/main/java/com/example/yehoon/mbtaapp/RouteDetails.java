@@ -1,14 +1,13 @@
 package com.example.yehoon.mbtaapp;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,6 +21,7 @@ import android.widget.Toast;
 public class RouteDetails extends AppCompatActivity {
     private boolean isNewRoute;
     private int index, transitID, startID, endID;
+    private Intent intent;
     private Spinner spn_route, spn_start, spn_end;
     private String start, end;
     private Route route;
@@ -32,7 +32,7 @@ public class RouteDetails extends AppCompatActivity {
         setContentView(R.layout.activity_route_details);
 
         // check if adding or editing a route
-        Intent intent = getIntent();
+        intent = getIntent();
         Bundle bundle = intent.getExtras();
         assert bundle != null;
         isNewRoute = bundle.getBoolean("newRoute");
@@ -184,24 +184,41 @@ public class RouteDetails extends AppCompatActivity {
                 else if(!endSelected)
                     Toast.makeText(RouteDetails.this, "End stop not selected!", Toast.LENGTH_SHORT).show();
                 else {
+                    int position;
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
                     transitID = spn_route.getSelectedItemPosition();
                     startID = spn_start.getSelectedItemPosition();
                     endID = spn_end.getSelectedItemPosition();
+
                     // add new route to database
                     if(isNewRoute) {
-                        new DatabaseAsync(RouteDetails.this).execute("new", 0, start, end, transitID, startID, endID);
+                        position = 0;
+                        //new DatabaseAsync(getApplicationContext()).execute("new", 0, start, end, transitID, startID, endID);
                     }
-                    // edit route and update databse
+                    // edit route and update database
                     else {
-                        new DatabaseAsync(RouteDetails.this).execute("edit", index, start, end, transitID, startID, endID);
+                        position = index;
+                        //new DatabaseAsync(getApplicationContext()).execute("edit", index, start, end, transitID, startID, endID);
                     }
+
                     // close and return to MainActivity
+                    Bundle bundle = new Bundle();
+                    bundle.putInt("position", position);
+                    bundle.putString("start", start);
+                    bundle.putString("end", end);
+                    bundle.putInt("transitID", transitID);
+                    bundle.putInt("startID", startID);
+                    bundle.putInt("endID", endID);
+                    intent.putExtras(bundle);
+                    setResult(Activity.RESULT_OK, intent);
+                    finish();
+                    /*
                     Intent intent = new Intent(RouteDetails.this, MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     finish();
+                    */
                 }
             }
         });
