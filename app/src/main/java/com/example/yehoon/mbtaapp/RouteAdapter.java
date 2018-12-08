@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -105,27 +106,29 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         builder.setItems(colors, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if (which == 0) // edit route
-                    showRouteDetails(routes.get(position));
-                else  // delete route
-                    new DatabaseAsync(context).execute("delete", position, null, null);
+                // edit route
+                if (which == 0)
+                    editRoute(routes.get(position), position);
+                // delete route
+                else
+                    deleteRoute(position);
             }
         });
         builder.show();
     }
 
-    private void showRouteDetails(Route route) { //, int position) {
+    private void editRoute(Route route, int index) {
         Intent intent = new Intent(context, RouteDetails.class);
         Bundle bundle = new Bundle();
         bundle.putBoolean("newRoute", false);
+        bundle.putInt("index", index);
         bundle.putSerializable("route", route);
         intent.putExtras(bundle);
         context.startActivity(intent);
     }
 
     private void deleteRoute(int position) {
-        Toast.makeText(context, " Deleting route #:" + position, Toast.LENGTH_SHORT).show();
-        // new DatabaseAsync(MainActivity.this).execute(null, position, null, null, null);
+        new DatabaseAsync(context).execute("delete", position, null, null, 0, 0, 0);
     }
 
     public void setRoutes(List<Route> routes) {

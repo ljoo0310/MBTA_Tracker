@@ -98,6 +98,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerViewAdapter = new RouteAdapter(this, routes);
         recyclerView.setAdapter(recyclerViewAdapter);
 
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null);  //MainActivity.this explain this usage
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
     }
 }

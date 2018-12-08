@@ -8,6 +8,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -19,9 +20,11 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 public class RouteDetails extends AppCompatActivity {
-    Spinner spn_route, spn_start, spn_end;
-    String start, end;
-    Route route;
+    private boolean isNewRoute;
+    private int index, transitID, startID, endID;
+    private Spinner spn_route, spn_start, spn_end;
+    private String start, end;
+    private Route route;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,14 +35,15 @@ public class RouteDetails extends AppCompatActivity {
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
         assert bundle != null;
-        boolean isNewRoute = bundle.getBoolean("newRoute");
-        if(!isNewRoute) { // editing an existing route
+        isNewRoute = bundle.getBoolean("newRoute");
+        // if editing a route, take route & index info
+        if(!isNewRoute) {
+            index = (int) bundle.getInt("index");
             route = (Route) bundle.getSerializable("route");
         }
-
         initToolbar();
         initTabs();
-        initSpinners(isNewRoute);
+        initSpinners();
         initButton();
     }
 
@@ -105,7 +109,7 @@ public class RouteDetails extends AppCompatActivity {
         });
     }
 
-    private void initSpinners(boolean isNewRoute) {
+    private void initSpinners() {
         // initialize spinners
         spn_route = (Spinner)findViewById(R.id.spn_route);
         spn_start = (Spinner)findViewById(R.id.spn_start);
@@ -134,9 +138,9 @@ public class RouteDetails extends AppCompatActivity {
             spn_end.setEnabled(false);
         }
         else { // editing an existing route
-            spn_route.setSelection(route.getTransitID() + 1);
-            spn_start.setSelection(route.getStartStopID() + 1);
-            spn_end.setSelection(route.getEndStopID() + 1);
+            spn_route.setSelection(route.getTransitID());
+            spn_start.setSelection(route.getStartID());
+            spn_end.setSelection(route.getEndID());
         }
 
         spn_route.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -180,10 +184,20 @@ public class RouteDetails extends AppCompatActivity {
                 else if(!endSelected)
                     Toast.makeText(RouteDetails.this, "End stop not selected!", Toast.LENGTH_SHORT).show();
                 else {
-                    Toast.makeText(RouteDetails.this, "Save button pressed!", Toast.LENGTH_SHORT).show();
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
-                    new DatabaseAsync(RouteDetails.this).execute("new", 0, start, end);
+                    transitID = spn_route.getSelectedItemPosition();
+                    startID = spn_start.getSelectedItemPosition();
+                    endID = spn_end.getSelectedItemPosition();
+                    // add new route to database
+                    if(isNewRoute) {
+                        new DatabaseAsync(RouteDetails.this).execute("new", 0, start, end, transitID, startID, endID);
+                    }
+                    // edit route and update databse
+                    else {
+                        new DatabaseAsync(RouteDetails.this).execute("edit", index, start, end, transitID, startID, endID);
+                    }
+                    // close and return to MainActivity
                     Intent intent = new Intent(RouteDetails.this, MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);

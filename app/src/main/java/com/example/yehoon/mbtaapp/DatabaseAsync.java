@@ -27,6 +27,9 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
         int position = (int) params[1];
         String start = (String) params[2];
         String end = (String) params[3];
+        int transitID = (int) params[4];
+        int startID = (int) params[5];
+        int endID = (int) params[6];
 
         // initial database load
         if(action == null) {
@@ -38,42 +41,23 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
             Route route = new Route();
             route.setStartStop(start);
             route.setEndStop(end);
+            route.setTransitID(transitID);
+            route.setStartID(startID);
+            route.setEndID(endID);
 
             //add route into the database
             RouteDatabase.getRouteDatabase(context).routeDao().addRoute(route);
+        }
+        // edit a route
+        else if(action.equals("edit")) {
+            Route route = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes().get(position);
+            RouteDatabase.getRouteDatabase(context).routeDao().updateRoute(route);
         }
         // delete a route
         else if(action.equals("delete")) {
             Route route = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes().get(position);
             RouteDatabase.getRouteDatabase(context).routeDao().deleteRoute(route);
         }
-        /*
-            //update route if shouldUpdate is true
-            if (shouldUpdate) {
-                Route route = routes.get(position);
-                route.setTitle(title);
-                route.setDescription(detail);
-                route.setDate(date);
-
-                //update route into the database
-                RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().updateRoute(route);
-
-            } else {
-
-            }
-
-        } else { //so no update since shouldUpdate == null
-            //delete all if postion is = -2, really bad, i should fix this
-            if (position == -2)
-                //delete all routes  from database
-                RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().dropTheTable();
-
-                //delete route
-            else if (position != -1) { //-1 means delete a specific route
-
-            }
-        }
-        */
 
         // Get routes from database
         List<Route> routeItems = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes();
