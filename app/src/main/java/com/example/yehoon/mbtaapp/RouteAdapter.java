@@ -108,7 +108,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
                 if (which == 0) { // edit route
                     showRouteDetails(routes.get(position));
                 } else { // delete route
-                    deleteRoute(position);
+                    new DatabaseAsync(context).execute("delete", position, null, null);
                 }
             }
         });

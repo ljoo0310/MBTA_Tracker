@@ -22,7 +22,6 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
 
     @Override
     protected List<Route> doInBackground(Object... params) {
-
         String action = (String) params[0];
         int position = (int) params[1];
         String start = (String) params[2];
@@ -34,13 +33,18 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
             return routeItems;
         }
         // add a new route
-        if(action.equals("new")) {
+        else if(action.equals("new")) {
             Route route = new Route();
             route.setStartStop(start);
             route.setEndStop(end);
 
             //add route into the database
             RouteDatabase.getRouteDatabase(context).routeDao().addRoute(route);
+        }
+        // delete a route
+        else if(action.equals("delete")) {
+            Route route = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes().get(position);
+            RouteDatabase.getRouteDatabase(context).routeDao().deleteRoute(route);
         }
         /*
             //update route if shouldUpdate is true
@@ -65,10 +69,7 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
 
                 //delete route
             else if (position != -1) { //-1 means delete a specific route
-                Route route = routes.get(position);
 
-                //delete route from database
-                RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().deleteRoute(route);
             }
         }
         */

@@ -14,6 +14,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -24,12 +25,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private RecyclerView recyclerView;
     public static RouteAdapter recyclerViewAdapter;
     private List<Route> routes = new ArrayList<Route>();
-    private static String[] startStops, endStops, departureTimes, arrivalTimes, schedules;
+    private TextView noRoutesFound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        noRoutesFound = (TextView) findViewById(R.id.tv_noRoutesFound);
 
         // setup recycler view
         setupRecyclerView();
@@ -62,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         //fetchResources();
         //getRoutes();
-        //
     }
 
     @Override
@@ -95,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
-
+    /*
     private void fetchResources() {
         Resources res = getResources();
         startStops = res.getStringArray(R.array.startStops);
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     0, i, i));
         }
     }
-
+    */
     private void setupRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -119,6 +120,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView.setAdapter(recyclerViewAdapter);
 
         new DatabaseAsync(MainActivity.this).execute(null, -1, null, null);  //MainActivity.this explain this usage
+
+        checkListEmptyOrNot();
     }
 
+    public void checkListEmptyOrNot() {
+        if (routes.isEmpty())
+            noRoutesFound.setVisibility(View.VISIBLE);
+        else
+            noRoutesFound.setVisibility(View.GONE);
+    }
 }
