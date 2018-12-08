@@ -128,7 +128,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder>
     }
 
     private String randomTime() {
-        return "" + randomInt() + randomInt() + ":" + randomInt() + randomInt() + ":" + randomInt() + randomInt();
+        return "" + randomInt() + randomInt() + ":" + randomInt() + randomInt();
     }
 
     private int randomInt() {
