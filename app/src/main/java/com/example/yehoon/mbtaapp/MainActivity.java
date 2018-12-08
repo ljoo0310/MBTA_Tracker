@@ -170,6 +170,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void setupRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {}
+
+            @Override
+            public void onLongClick(View view, int position) {
+                showActionsDialog(position);
+            }
+        }));
+
         new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
         //recyclerViewAdapter = new RouteAdapter(this, routes);
         //recyclerView.setAdapter(recyclerViewAdapter);
@@ -179,9 +189,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onClick(View view, int position) {}
 
     @Override
-    public void onLongClick(View view, int position) {
-        showActionsDialog(position);
-    }
+    public void onLongClick(View view, int position) {}
 
     public void showActionsDialog(final int position) {
         CharSequence colors[] = new CharSequence[]{"Edit", "Delete"};
