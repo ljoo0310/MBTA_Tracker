@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -24,6 +25,15 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
     private List<Route> routes = new ArrayList<>();
+    private ArrayList<RouteName> routeNames = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Bundle bundle = new Bundle();
                 bundle.putInt("requestCode", 101);
                 bundle.putBoolean("newRoute", true);
+                bundle.putSerializable("routeNames", routeNames);
                 intent.putExtras(bundle);
                 startActivityForResult(intent, 101);
             }
@@ -67,6 +79,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // fetch routes
+        new FetchRoutes().execute();
     }
 
     @Override
@@ -147,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 route.setTransitID(transitID);
                 route.setStartID(startID);
                 route.setEndID(endID);
-                
+
                 RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().updateRoute(route);
             }
             // delete a route
@@ -168,6 +183,112 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             routeAdapter = new RouteAdapter(getApplicationContext(), routes);
             routeAdapter.setClickListener(clickListener); //this is important since need MainActivity.this
             recyclerView.setAdapter(routeAdapter);
+        }
+    }
+
+    private class FetchRoutes extends AsyncTask<Void, Void, String> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            // Set up variables for the try block that need to be closed in the finally block.
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String routeJSONString = null;
+            try {
+                final String ROUTE_BASE_URL =  "https://api-v3.mbta.com/routes?";
+                final String API_KEY = "api_key";
+                final String TYPE = "type";
+                final String SORT = "sort";
+                final String MAX_RESULTS = "page[limit]";
+
+                // Build up your query URI, limiting results to 10 items and printed movies.
+                Uri builtURI = Uri.parse(ROUTE_BASE_URL).buildUpon()
+                        .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
+                        .appendQueryParameter(TYPE, "0")
+                        .appendQueryParameter(SORT, "long_name")
+                        .appendQueryParameter(MAX_RESULTS, "4")
+                        .build();
+
+                URL requestURL = new URL(builtURI.toString());
+
+                // Open the network connection.
+                urlConnection = (HttpURLConnection) requestURL.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                // Get the InputStream.
+                InputStream inputStream = urlConnection.getInputStream();
+
+                // Read the response string into a StringBuilder.
+                StringBuilder builder = new StringBuilder();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // but it does make debugging a *lot* easier if you print out the completed buffer for debugging.
+                    builder.append(line + "\n");
+                    publishProgress();
+                }
+
+                if (builder.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    // return null;
+                    return null;
+                }
+                routeJSONString = builder.toString();
+            } catch (IOException e) { // Catch errors.
+                e.printStackTrace();
+            } finally { // Close the connections.
+                if (urlConnection != null)
+                    urlConnection.disconnect();
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            // Return the raw response.
+            return routeJSONString;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            try {
+                // Convert the response into a JSON object.
+                JSONObject jsonObject = new JSONObject(s); //get top level object
+                // Get the JSONArray of book items.
+                JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of routes
+
+                // Initialize iterator and results fields.
+                int i = 0;
+                // Look for results in the items array
+                while (i < itemsArray.length()) {
+                    // Get the current item information.
+                    JSONObject dataObject = itemsArray.getJSONObject(i);
+                    JSONObject attributeObject = dataObject.getJSONObject("attributes");
+                    String name = attributeObject.getString("long_name");
+                    String id = dataObject.getString("id");
+
+                    RouteName routeName = new RouteName();
+                    routeName.setTransitName(name);
+                    routeName.setTransitID(id);
+                    routeNames.add(routeName);
+                    i++;
+                }
+                // new loadDataBase(db, recyclerView,  adapter, context).execute(items); //now enter all the data in db
+            } catch (Exception e){
+                // If onPostExecute does not receive a proper JSON string,
+                // update the UI to show failed results.
+                e.printStackTrace();
+            }
         }
     }
 

@@ -18,7 +18,11 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 public class RouteDetails extends AppCompatActivity {
+    private ArrayList<RouteName> routeNames;
     private boolean isNewRoute;
     private int index, transitID, startID, endID;
     private Intent intent;
@@ -41,6 +45,8 @@ public class RouteDetails extends AppCompatActivity {
             index = (int) bundle.getInt("index");
             route = (Route) bundle.getSerializable("route");
         }
+        routeNames = (ArrayList<RouteName>) bundle.getSerializable("routeNames");
+
         initToolbar();
         initTabs();
         initSpinners();
@@ -115,9 +121,15 @@ public class RouteDetails extends AppCompatActivity {
         spn_start = (Spinner)findViewById(R.id.spn_start);
         spn_end = (Spinner)findViewById(R.id.spn_end);
 
+        // Fetch transit names
+        String[] transits = new String[routeNames.size() + 1];
+        transits[0] = "Choose";
+        for(int i = 0; i < routeNames.size(); i++)
+            transits[i + 1] = routeNames.get(i).getTransitName();
+
         // create adapters for spinners
-        ArrayAdapter<CharSequence> adapterRoute = ArrayAdapter.createFromResource(this,
-                R.array.transits, android.R.layout.simple_spinner_item);
+        ArrayAdapter<String> adapterRoute = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, transits);
         ArrayAdapter<CharSequence> adapterStart = ArrayAdapter.createFromResource(this,
                 R.array.startStopsSpinner, android.R.layout.simple_spinner_item);
         ArrayAdapter<CharSequence> adapterEnd = ArrayAdapter.createFromResource(this,
