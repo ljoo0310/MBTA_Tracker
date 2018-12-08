@@ -2,6 +2,7 @@ package com.example.yehoon.mbtaapp;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,8 +87,5 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
         RouteAdapter adapter = MainActivity.recyclerViewAdapter;
         adapter.setRoutes(routes);
         adapter.notifyDataSetChanged();
-
-        //shows NO EVENTS FOUND when list is empty
-        //checkListEmptyOrNot();
     }
 }

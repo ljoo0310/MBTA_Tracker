@@ -25,13 +25,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private RecyclerView recyclerView;
     public static RouteAdapter recyclerViewAdapter;
     private List<Route> routes = new ArrayList<Route>();
-    private TextView noRoutesFound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        noRoutesFound = (TextView) findViewById(R.id.tv_noRoutesFound);
 
         // setup recycler view
         setupRecyclerView();
@@ -61,9 +59,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-        //fetchResources();
-        //getRoutes();
     }
 
     @Override
@@ -96,23 +91,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
-    /*
-    private void fetchResources() {
-        Resources res = getResources();
-        startStops = res.getStringArray(R.array.startStops);
-        endStops = res.getStringArray(R.array.endStops);
-        departureTimes = res.getStringArray(R.array.departureTimes);
-        arrivalTimes = res.getStringArray(R.array.arrivalTimes);
-    }
 
-    private void getRoutes() {
-        int size = startStops.length;
-        for (int i = 0; i< size; i++) {
-            routes.add(new Route(i, startStops[i], endStops[i], departureTimes[i], arrivalTimes[i],
-                    0, i, i));
-        }
-    }
-    */
     private void setupRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -120,14 +99,5 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView.setAdapter(recyclerViewAdapter);
 
         new DatabaseAsync(MainActivity.this).execute(null, -1, null, null);  //MainActivity.this explain this usage
-
-        checkListEmptyOrNot();
-    }
-
-    public void checkListEmptyOrNot() {
-        if (routes.isEmpty())
-            noRoutesFound.setVisibility(View.VISIBLE);
-        else
-            noRoutesFound.setVisibility(View.GONE);
     }
 }

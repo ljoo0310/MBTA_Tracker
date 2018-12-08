@@ -105,11 +105,10 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         builder.setItems(colors, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if (which == 0) { // edit route
+                if (which == 0) // edit route
                     showRouteDetails(routes.get(position));
-                } else { // delete route
+                else  // delete route
                     new DatabaseAsync(context).execute("delete", position, null, null);
-                }
             }
         });
         builder.show();
