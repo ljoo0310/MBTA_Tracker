@@ -11,13 +11,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
-    public ArrayList<Route> routes;
+    private List<Route> routes;
     protected Context context;
 
-    public RouteAdapter(Context context, ArrayList<Route> routes) {
+    public RouteAdapter(Context context, List<Route> routes) {
         this.context = context;
         this.routes = routes;
     }
@@ -124,4 +124,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteHolders> {
         // new DatabaseAsync(MainActivity.this).execute(null, position, null, null, null);
     }
 
+    public void setRoutes(List<Route> routes) {
+        this.routes = routes;
+    }
 }

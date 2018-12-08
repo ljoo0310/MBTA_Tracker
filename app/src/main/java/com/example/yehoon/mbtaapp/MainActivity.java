@@ -17,12 +17,13 @@ import android.view.View;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private RecyclerView recyclerView;
-    private RouteAdapter recyclerViewAdapter;
-    private ArrayList<Route> routes = new ArrayList<Route>();
+    public static RouteAdapter recyclerViewAdapter;
+    private List<Route> routes = new ArrayList<Route>();
     private static String[] startStops, endStops, departureTimes, arrivalTimes, schedules;
 
     @Override
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void getRoutes() {
         int size = startStops.length;
         for (int i = 0; i< size; i++) {
-            routes.add(new Route(startStops[i], endStops[i], departureTimes[i], arrivalTimes[i],
+            routes.add(new Route(i, startStops[i], endStops[i], departureTimes[i], arrivalTimes[i],
                     0, i, i));
         }
     }

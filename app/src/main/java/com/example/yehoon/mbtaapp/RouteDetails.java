@@ -19,7 +19,8 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 public class RouteDetails extends AppCompatActivity {
-    Spinner spnRoute, spnStart, spnEnd;
+    Spinner spn_route, spn_start, spn_end;
+    String start, end;
     Route route;
 
     @Override
@@ -65,7 +66,6 @@ public class RouteDetails extends AppCompatActivity {
         setSupportActionBar(toolbar);
         ActionBar ab = getSupportActionBar();
         ab.setDisplayHomeAsUpEnabled(true);
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
     }
 
     private void initTabs() {
@@ -104,9 +104,9 @@ public class RouteDetails extends AppCompatActivity {
 
     private void initSpinners(boolean isNewRoute) {
         // initialize spinners
-        spnRoute = (Spinner)findViewById(R.id.spn_route);
-        spnStart = (Spinner)findViewById(R.id.spn_start);
-        spnEnd = (Spinner)findViewById(R.id.spn_end);
+        spn_route = (Spinner)findViewById(R.id.spn_route);
+        spn_start = (Spinner)findViewById(R.id.spn_start);
+        spn_end = (Spinner)findViewById(R.id.spn_end);
 
         // create adapters for spinners
         ArrayAdapter<CharSequence> adapterRoute = ArrayAdapter.createFromResource(this,
@@ -122,32 +122,32 @@ public class RouteDetails extends AppCompatActivity {
         adapterEnd.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         // assign adapters to spinners
-        spnRoute.setAdapter(adapterRoute);
-        spnStart.setAdapter(adapterStart);
-        spnEnd.setAdapter(adapterEnd);
+        spn_route.setAdapter(adapterRoute);
+        spn_start.setAdapter(adapterStart);
+        spn_end.setAdapter(adapterEnd);
 
         if(isNewRoute) { // adding a new route
-            spnStart.setEnabled(false);
-            spnEnd.setEnabled(false);
+            spn_start.setEnabled(false);
+            spn_end.setEnabled(false);
         }
         else { // editing an existing route
-            spnRoute.setSelection(route.getTransit_id() + 1);
-            spnStart.setSelection(route.getStartStop_id() + 1);
-            spnEnd.setSelection(route.getEndStop_id() + 1);
+            spn_route.setSelection(route.getTransitID() + 1);
+            spn_start.setSelection(route.getStartStopID() + 1);
+            spn_end.setSelection(route.getEndStopID() + 1);
         }
 
-        spnRoute.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        spn_route.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if(position == 0) {
-                    spnStart.setEnabled(false);
-                    spnEnd.setEnabled(false);
-                    spnStart.setSelection(0);
-                    spnEnd.setSelection(0);
+                    spn_start.setEnabled(false);
+                    spn_end.setEnabled(false);
+                    spn_start.setSelection(0);
+                    spn_end.setSelection(0);
                 }
                 else {
-                    spnStart.setEnabled(true);
-                    spnEnd.setEnabled(true);
+                    spn_start.setEnabled(true);
+                    spn_end.setEnabled(true);
                 }
             }
 
@@ -162,15 +162,25 @@ public class RouteDetails extends AppCompatActivity {
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Check if the spinners are properly selected
-                Boolean routeSelected = spnRoute.getSelectedItem().equals("Choose");
-                Boolean startSelected = spnStart.getSelectedItem().equals("Choose");
-                Boolean endSelected = spnEnd.getSelectedItem().equals("Choose");
-                if(routeSelected || startSelected || endSelected) {
-                    Toast.makeText(RouteDetails.this, "Spinner not selected!", Toast.LENGTH_SHORT).show();
-                }
+
+                Boolean routeSelected = !(spn_route.getSelectedItem().equals("Choose"));
+                Boolean startSelected = !(spn_start.getSelectedItem().equals("Choose"));
+                Boolean endSelected = !(spn_end.getSelectedItem().equals("Choose"));
+
+                // Check if spinners are properly selected
+                if(!routeSelected)
+                    Toast.makeText(RouteDetails.this, "Route not selected!", Toast.LENGTH_SHORT).show();
+                else if(!startSelected && !endSelected)
+                    Toast.makeText(RouteDetails.this, "Start and end stops not selected!", Toast.LENGTH_SHORT).show();
+                else if(!startSelected)
+                    Toast.makeText(RouteDetails.this, "Start stop not selected!", Toast.LENGTH_SHORT).show();
+                else if(!endSelected)
+                    Toast.makeText(RouteDetails.this, "End stop not selected!", Toast.LENGTH_SHORT).show();
                 else {
                     Toast.makeText(RouteDetails.this, "Save button pressed!", Toast.LENGTH_SHORT).show();
+                    start = spn_start.getSelectedItem().toString();
+                    end = spn_end.getSelectedItem().toString();
+                    new DatabaseAsync(RouteDetails.this).execute("new", null, start, end);
                 }
             }
         });
