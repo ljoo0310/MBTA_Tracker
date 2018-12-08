@@ -28,8 +28,13 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
         String start = (String) params[2];
         String end = (String) params[3];
 
+        // initial database load
+        if(action == null) {
+            List<Route> routeItems = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes();
+            return routeItems;
+        }
         // add a new route
-        if (action.equals("new")) {
+        if(action.equals("new")) {
             Route route = new Route();
             route.setStartStop(start);
             route.setEndStop(end);
@@ -69,8 +74,8 @@ public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
         */
 
         // Get routes from database
-        List<Route> routes = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes();
-        return routes;
+        List<Route> routeItems = RouteDatabase.getRouteDatabase(context).routeDao().getRoutes();
+        return routeItems;
     }
 
     @Override

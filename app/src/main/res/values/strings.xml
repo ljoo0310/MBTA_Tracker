@@ -43,12 +43,14 @@
         <item>Boston College</item>
         <item>South St.</item>
         <item>Copley</item>
+        <item>start</item>
     </string-array>
     <string-array name="endStopsSpinner">
         <item>Choose</item>
         <item>Harvard Ave.</item>
         <item>BU West</item>
         <item>Babcock St.</item>
+        <item>end</item>
     </string-array>
 
     <!--FragmentTimes-->

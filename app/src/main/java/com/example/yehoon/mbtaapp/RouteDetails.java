@@ -180,7 +180,7 @@ public class RouteDetails extends AppCompatActivity {
                     Toast.makeText(RouteDetails.this, "Save button pressed!", Toast.LENGTH_SHORT).show();
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
-                    new DatabaseAsync(RouteDetails.this).execute("new", null, start, end);
+                    new DatabaseAsync(RouteDetails.this).execute("new", 0, start, end);
                 }
             }
         });

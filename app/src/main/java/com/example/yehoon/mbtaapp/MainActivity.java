@@ -31,6 +31,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // setup recycler view
+        setupRecyclerView();
+
         // setup toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_fragment);
         setSupportActionBar(toolbar);
@@ -57,9 +60,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        fetchResources();
-        getRoutes();
-        setupRecyclerView();
+        //fetchResources();
+        //getRoutes();
+        //
     }
 
     @Override
@@ -114,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewAdapter = new RouteAdapter(this, routes);
         recyclerView.setAdapter(recyclerViewAdapter);
+
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null);  //MainActivity.this explain this usage
     }
 
 }
