@@ -184,23 +184,12 @@ public class RouteDetails extends AppCompatActivity {
                 else if(!endSelected)
                     Toast.makeText(RouteDetails.this, "End stop not selected!", Toast.LENGTH_SHORT).show();
                 else {
-                    int position;
+                    int position = isNewRoute? 0 : index; // a new route or an edited route
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
                     transitID = spn_route.getSelectedItemPosition();
                     startID = spn_start.getSelectedItemPosition();
                     endID = spn_end.getSelectedItemPosition();
-
-                    // add new route to database
-                    if(isNewRoute) {
-                        position = 0;
-                        //new DatabaseAsync(getApplicationContext()).execute("new", 0, start, end, transitID, startID, endID);
-                    }
-                    // edit route and update database
-                    else {
-                        position = index;
-                        //new DatabaseAsync(getApplicationContext()).execute("edit", index, start, end, transitID, startID, endID);
-                    }
 
                     // close and return to MainActivity
                     Bundle bundle = new Bundle();
@@ -213,12 +202,6 @@ public class RouteDetails extends AppCompatActivity {
                     intent.putExtras(bundle);
                     setResult(Activity.RESULT_OK, intent);
                     finish();
-                    /*
-                    Intent intent = new Intent(RouteDetails.this, MainActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    finish();
-                    */
                 }
             }
         });

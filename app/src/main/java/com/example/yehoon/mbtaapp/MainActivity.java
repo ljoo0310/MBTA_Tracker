@@ -18,6 +18,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -30,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
-    private List<Route> routes = new ArrayList<Route>();
+    private List<Route> routes = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,8 +103,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
         private RouteAdapter.ClickListener clickListener; // need to get to main
 
+        // Constructor providing a reference to the views in MainActivity
         public DatabaseAsync(RouteAdapter.ClickListener clickListener) {
-            this.clickListener = clickListener; // Constructor providing a reference to the views in MainActivity
+            this.clickListener = clickListener;
         }
 
         @Override
@@ -135,12 +137,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 route.setStartID(startID);
                 route.setEndID(endID);
 
-                //add route into the database
                 RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().addRoute(route);
             }
             // edit a route
             else if(action.equals("edit")) {
                 Route route = RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().getRoutes().get(position);
+                route.setStartStop(start);
+                route.setEndStop(end);
+                route.setTransitID(transitID);
+                route.setStartID(startID);
+                route.setEndID(endID);
+                
                 RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().updateRoute(route);
             }
             // delete a route
@@ -161,15 +168,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             routeAdapter = new RouteAdapter(getApplicationContext(), routes);
             routeAdapter.setClickListener(clickListener); //this is important since need MainActivity.this
             recyclerView.setAdapter(routeAdapter);
-
-            //adapter.setRoutes(routes);
-            //adapter.notifyDataSetChanged();
         }
     }
 
     private void setupRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
+
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
+
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
             public void onClick(View view, int position) {}
@@ -179,10 +186,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 showActionsDialog(position);
             }
         }));
-
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
-        //recyclerViewAdapter = new RouteAdapter(this, routes);
-        //recyclerView.setAdapter(recyclerViewAdapter);
     }
 
     @Override
