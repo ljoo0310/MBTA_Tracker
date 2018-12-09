@@ -2,12 +2,15 @@ package com.example.yehoon.mbtaapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -18,11 +21,20 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import java.lang.reflect.Array;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class RouteDetails extends AppCompatActivity {
-    private ArrayList<RouteName> routeNames;
+    private ArrayList<Transit> transits = new ArrayList<>();
+    private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
     private boolean isNewRoute;
     private int index, transitID, startID, endID;
     private Intent intent;
@@ -45,7 +57,7 @@ public class RouteDetails extends AppCompatActivity {
             index = (int) bundle.getInt("index");
             route = (Route) bundle.getSerializable("route");
         }
-        routeNames = (ArrayList<RouteName>) bundle.getSerializable("routeNames");
+        transits = (ArrayList<Transit>) bundle.getSerializable("transits");
 
         initToolbar();
         initTabs();
@@ -68,6 +80,122 @@ public class RouteDetails extends AppCompatActivity {
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private class FetchStops extends AsyncTask<String, Void, String> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String transitID = (String) params[0];
+            Log.d("LUKE", "transitID: " + transitID);
+            // Set up variables for the try block that need to be closed in the finally block.
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String routeJSONString = null;
+            try {
+                final String START_BASE_URL = "https://api-v3.mbta.com/stops?";
+                final String API_KEY = "api_key";
+                final String ROUTE = "filter[route]";
+
+                // Build up your query URI, limiting results to 10 items and printed movies.
+                Uri builtURI = Uri.parse(START_BASE_URL).buildUpon()
+                        .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
+                        .appendQueryParameter(ROUTE, transitID)
+                        .build();
+
+                URL requestURL = new URL(builtURI.toString());
+
+                // Open the network connection.
+                urlConnection = (HttpURLConnection) requestURL.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                // Get the InputStream.
+                InputStream inputStream = urlConnection.getInputStream();
+
+                // Read the response string into a StringBuilder.
+                StringBuilder builder = new StringBuilder();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // but it does make debugging a *lot* easier if you print out the completed buffer for debugging.
+                    builder.append(line + "\n");
+                    publishProgress();
+                }
+
+                if (builder.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    // return null;
+                    return null;
+                }
+                routeJSONString = builder.toString();
+            } catch (IOException e) { // Catch errors.
+                e.printStackTrace();
+            } finally { // Close the connections.
+                if (urlConnection != null)
+                    urlConnection.disconnect();
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            // Return the raw response.
+            return routeJSONString;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            try {
+                // Convert the response into a JSON object.
+                JSONObject jsonObject = new JSONObject(s); //get top level object
+                // Get the JSONArray of book items.
+                JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of routes
+
+                // Initialize iterator and results fields.
+                int i = 0;
+                // Look for results in the items array
+                ArrayList<Stop> stops = new ArrayList<>();
+                while (i < itemsArray.length()) {
+                    // Get the current item information.
+                    JSONObject dataObject = itemsArray.getJSONObject(i);
+                    JSONObject attributeObject = dataObject.getJSONObject("attributes");
+                    String name = attributeObject.getString("name");
+                    String id = dataObject.getString("id");
+
+                    Stop stop = new Stop();
+                    stop.setStopName(name);
+                    stop.setStopID(id);
+                    stops.add(stop);
+                    i++;
+                }
+                // get stop names
+                ArrayList<String> str_stops = new ArrayList<>();
+                str_stops.add("Choose");
+                for(int j = 0; j < stops.size(); j++) {
+                    str_stops.add(stops.get(j).getStopName());
+                }
+
+                // create new adapters
+                adapterStart.clear();
+                adapterStart.addAll(str_stops);
+                adapterEnd.clear();
+                adapterEnd.addAll(str_stops);
+            } catch (Exception e){
+                // If onPostExecute does not receive a proper JSON string,
+                // update the UI to show failed results.
+                e.printStackTrace();
+            }
         }
     }
 
@@ -121,19 +249,27 @@ public class RouteDetails extends AppCompatActivity {
         spn_start = (Spinner)findViewById(R.id.spn_start);
         spn_end = (Spinner)findViewById(R.id.spn_end);
 
-        // Fetch transit names
-        String[] transits = new String[routeNames.size() + 1];
-        transits[0] = "Choose";
-        for(int i = 0; i < routeNames.size(); i++)
-            transits[i + 1] = routeNames.get(i).getTransitName();
+        // get stop names
+        ArrayList<String> str_transits = new ArrayList<>();
+        str_transits.add("Choose");
+        for(int j = 0; j < transits.size(); j++) {
+            str_transits.add(transits.get(j).getTransitName());
+        }
+        // temporary string arrays for spinner initializations
+        // use ArrayLists in order to use adapter.clear()
+        ArrayList<String> temp_array = new ArrayList<String>(){
+            {
+                add("Choose");
+            }
+        };
 
         // create adapters for spinners
-        ArrayAdapter<String> adapterRoute = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_item, transits);
-        ArrayAdapter<CharSequence> adapterStart = ArrayAdapter.createFromResource(this,
-                R.array.startStopsSpinner, android.R.layout.simple_spinner_item);
-        ArrayAdapter<CharSequence> adapterEnd = ArrayAdapter.createFromResource(this,
-                R.array.endStopsSpinner, android.R.layout.simple_spinner_item);
+        adapterRoute = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, str_transits);
+        adapterStart = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, temp_array);
+        adapterEnd = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, temp_array);
 
         // assign data to spinner adapters
         adapterRoute.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -165,8 +301,13 @@ public class RouteDetails extends AppCompatActivity {
                     spn_end.setSelection(0);
                 }
                 else {
+                    spn_start.setSelection(0);
+                    spn_end.setSelection(0);
                     spn_start.setEnabled(true);
                     spn_end.setEnabled(true);
+                    // do -1 for "Choose" value
+                    String transit = transits.get(spn_route.getSelectedItemPosition() - 1).getTransitID();
+                    new FetchStops().execute(transit);
                 }
             }
 

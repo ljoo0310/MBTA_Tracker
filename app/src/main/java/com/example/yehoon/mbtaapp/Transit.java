@@ -9,10 +9,10 @@ import java.io.Serializable;
 
 import static com.example.yehoon.mbtaapp.Route.TABLE_NAME;
 
-public class RouteName implements Serializable {
+public class Transit implements Serializable {
     private String transitName, transitID;
 
-    public RouteName() {}
+    public Transit() {}
 
     public String getTransitName() {
         return transitName;

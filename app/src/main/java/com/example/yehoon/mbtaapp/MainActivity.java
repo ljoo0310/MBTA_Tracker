@@ -2,10 +2,8 @@ package com.example.yehoon.mbtaapp;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -15,14 +13,11 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -38,11 +33,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, RouteAdapter.ClickListener {
-
+    private ArrayList<Transit> transits = new ArrayList<>();
+    private List<Route> routes = new ArrayList<>();
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
-    private List<Route> routes = new ArrayList<>();
-    private ArrayList<RouteName> routeNames = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Bundle bundle = new Bundle();
                 bundle.putInt("requestCode", 101);
                 bundle.putBoolean("newRoute", true);
-                bundle.putSerializable("routeNames", routeNames);
+                bundle.putSerializable("transits", transits);
                 intent.putExtras(bundle);
                 startActivityForResult(intent, 101);
             }
@@ -186,6 +180,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    private void setupRecyclerView() {
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
+
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
+
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {}
+
+            @Override
+            public void onLongClick(View view, int position) {
+                showActionsDialog(position);
+            }
+        }));
+    }
+
     private class FetchRoutes extends AsyncTask<Void, Void, String> {
         @Override
         protected void onPreExecute() {
@@ -277,10 +288,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     String name = attributeObject.getString("long_name");
                     String id = dataObject.getString("id");
 
-                    RouteName routeName = new RouteName();
-                    routeName.setTransitName(name);
-                    routeName.setTransitID(id);
-                    routeNames.add(routeName);
+                    Transit transit = new Transit();
+                    transit.setTransitName(name);
+                    transit.setTransitID(id);
+                    transits.add(transit);
                     i++;
                 }
                 // new loadDataBase(db, recyclerView,  adapter, context).execute(items); //now enter all the data in db
@@ -290,23 +301,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 e.printStackTrace();
             }
         }
-    }
-
-    private void setupRecyclerView() {
-        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
-
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
-
-        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
-            @Override
-            public void onClick(View view, int position) {}
-
-            @Override
-            public void onLongClick(View view, int position) {
-                showActionsDialog(position);
-            }
-        }));
     }
 
     @Override
