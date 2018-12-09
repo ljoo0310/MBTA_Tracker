@@ -18,6 +18,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -38,11 +39,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private List<Route> routes = new ArrayList<>();
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
+    private TextView noRoutesFound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // show if no routes found
+        noRoutesFound = (TextView) findViewById(R.id.tv_no_routes_found);
 
         // fetch routes
         new FetchRoutes().execute();
@@ -178,6 +183,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             routeAdapter = new RouteAdapter(getApplicationContext(), routes);
             routeAdapter.setClickListener(clickListener); //this is important since need MainActivity.this
             recyclerView.setAdapter(routeAdapter);
+
+            // show "No routes found!" if empty
+            checkListEmptyOrNot();
         }
     }
 
@@ -185,7 +193,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
 
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, null, null, null);  //MainActivity.this explain this usage
+        // initial database load
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, null, null, null);
 
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
@@ -371,5 +380,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             new DatabaseAsync(MainActivity.this).execute("edit", position, start, end, transitID, startID, endID);
         }
+    }
+
+    public void checkListEmptyOrNot() {
+        if (routes.isEmpty())
+            noRoutesFound.setVisibility(View.VISIBLE);
+        else
+            noRoutesFound.setVisibility(View.GONE);
     }
 }

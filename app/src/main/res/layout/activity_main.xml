@@ -24,4 +24,15 @@
         app:headerLayout="@layout/nav_header_main"
         app:menu="@menu/activity_main_drawer" />
 
+    <TextView
+        android:id="@+id/tv_no_routes_found"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fontFamily="sans-serif"
+        android:gravity="center"
+        android:text="No routes found"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="25sp"
+        android:visibility="gone" />
+
 </android.support.v4.widget.DrawerLayout>
