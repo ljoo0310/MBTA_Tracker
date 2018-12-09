@@ -31,15 +31,20 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class RouteDetails extends AppCompatActivity {
-    private ArrayList<Transit> transits = new ArrayList<>();
+    private List<Stop> stops;
+    private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
     private boolean isNewRoute;
-    private int index, transitID, startID, endID;
+    private int index;
+    private int initialLoad = 0; // int to check if need initial load
+    private int transitIndex = -1; // to index route spinner
     private Intent intent;
     private Spinner spn_route, spn_start, spn_end;
     private String start, end;
+    private String editTransitID = ""; // to pass into FetchStops
     private Route route;
 
     @Override
@@ -76,23 +81,28 @@ public class RouteDetails extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_favorite:
-                Toast.makeText(this, "Map button pressed", Toast.LENGTH_SHORT).show();
+                Intent mapIntent = new Intent(RouteDetails.this, MapActivity.class);
+                Bundle mapBundle = new Bundle();
+                mapBundle.putSerializable("route", route);
+                mapIntent.putExtras(mapBundle);
+                startActivity(mapIntent);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    private class FetchStops extends AsyncTask<String, Void, String> {
+    private class FetchStops extends AsyncTask<Object, Void, String[]> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
         }
 
         @Override
-        protected String doInBackground(String... params) {
+        protected String[] doInBackground(Object... params) {
             String transitID = (String) params[0];
-            Log.d("LUKE", "transitID: " + transitID);
+            int transitIndex = (int) params[1];
+            String routeNewEdit = (String) params[2];
             // Set up variables for the try block that need to be closed in the finally block.
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -151,46 +161,82 @@ public class RouteDetails extends AppCompatActivity {
                 }
             }
             // Return the raw response.
-            return routeJSONString;
+            String[] transitJSONPair = new String[]{routeJSONString, transitID, Integer.toString(transitIndex), routeNewEdit};
+            return transitJSONPair;
         }
 
         @Override
-        protected void onPostExecute(String s) {
+        protected void onPostExecute(String[] s) {
             try {
+                String routeJSONString = s[0];
+                String transitID = s[1];
+                int transitIndex = Integer.parseInt(s[2]);
+                String routeNewEdit = s[3];
+
                 // Convert the response into a JSON object.
-                JSONObject jsonObject = new JSONObject(s); //get top level object
+                JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
                 // Get the JSONArray of book items.
                 JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of routes
 
+                // reset stops list
+                stops = new ArrayList<>();
+
                 // Initialize iterator and results fields.
-                int i = 0;
-                // Look for results in the items array
-                ArrayList<Stop> stops = new ArrayList<>();
-                while (i < itemsArray.length()) {
+                int stopIndex, increment;
+                // if Green Line - D, do reverse order
+                if(transitID.equals("Green-D")) {
+                    stopIndex = itemsArray.length() - 1;
+                    increment = -1;
+                }
+                // do proper order otherwise
+                else {
+                    stopIndex = 0;
+                    increment = 1;
+                }
+                // if Green Line - D, then reverse order
+                for(int i = 0; i < itemsArray.length(); i++) {
                     // Get the current item information.
-                    JSONObject dataObject = itemsArray.getJSONObject(i);
+                    JSONObject dataObject = itemsArray.getJSONObject(stopIndex);
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
                     String name = attributeObject.getString("name");
                     String id = dataObject.getString("id");
+                    double latitude = attributeObject.getDouble("latitude");
+                    double longitude = attributeObject.getDouble("longitude");
 
                     Stop stop = new Stop();
                     stop.setStopName(name);
                     stop.setStopID(id);
+                    stop.setLatitutde(latitude);
+                    stop.setLongitude(longitude);
                     stops.add(stop);
-                    i++;
+                    stopIndex += increment;
                 }
+
                 // get stop names
                 ArrayList<String> str_stops = new ArrayList<>();
                 str_stops.add("Choose");
-                for(int j = 0; j < stops.size(); j++) {
-                    str_stops.add(stops.get(j).getStopName());
-                }
+                for(int i = 0; i < stops.size(); i++)
+                    str_stops.add(stops.get(i).getStopName());
 
                 // create new adapters
                 adapterStart.clear();
                 adapterStart.addAll(str_stops);
                 adapterEnd.clear();
                 adapterEnd.addAll(str_stops);
+
+                if(routeNewEdit.equals("edit")){
+                    int startIndex = -1, endIndex = -1;
+                    for (int i = 0; i < stops.size(); i++) {
+                        if (stops.get(i).getStopID().equals(route.getStartID()))
+                            startIndex = i;
+                        if (stops.get(i).getStopID().equals(route.getEndID()))
+                            endIndex = i;
+                    }
+                    spn_route.setSelection(transitIndex + 1);
+                    spn_start.setSelection(startIndex + 1);
+                    spn_end.setSelection(endIndex + 1);
+                    initialLoad = 1;
+                }
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
                 // update the UI to show failed results.
@@ -252,8 +298,8 @@ public class RouteDetails extends AppCompatActivity {
         // get stop names
         ArrayList<String> str_transits = new ArrayList<>();
         str_transits.add("Choose");
-        for(int j = 0; j < transits.size(); j++) {
-            str_transits.add(transits.get(j).getTransitName());
+        for(int i = 0; i < transits.size(); i++) {
+            str_transits.add(transits.get(i).getTransitName());
         }
         // temporary string arrays for spinner initializations
         // use ArrayLists in order to use adapter.clear()
@@ -281,14 +327,21 @@ public class RouteDetails extends AppCompatActivity {
         spn_start.setAdapter(adapterStart);
         spn_end.setAdapter(adapterEnd);
 
-        if(isNewRoute) { // adding a new route
+        // adding a new route
+        if(isNewRoute) {
             spn_start.setEnabled(false);
             spn_end.setEnabled(false);
         }
-        else { // editing an existing route
-            spn_route.setSelection(route.getTransitID());
-            spn_start.setSelection(route.getStartID());
-            spn_end.setSelection(route.getEndID());
+        // editing an existing route
+        else {
+            for(int i = 0; i < transits.size(); i++) {
+                editTransitID = transits.get(i).getTransitID();
+                if(editTransitID.equals(route.getTransitID())) {
+                    transitIndex = i;
+                    break;
+                }
+            }
+            new FetchStops().execute(editTransitID, transitIndex, "edit");
         }
 
         spn_route.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -301,13 +354,17 @@ public class RouteDetails extends AppCompatActivity {
                     spn_end.setSelection(0);
                 }
                 else {
-                    spn_start.setSelection(0);
-                    spn_end.setSelection(0);
                     spn_start.setEnabled(true);
                     spn_end.setEnabled(true);
-                    // do -1 for "Choose" value
-                    String transit = transits.get(spn_route.getSelectedItemPosition() - 1).getTransitID();
-                    new FetchStops().execute(transit);
+                    String transit = transits.get(spn_route.getSelectedItemPosition() - 1)
+                            .getTransitID(); // do -1 for "Choose" value
+                    if(initialLoad == 0) { // carry on regular stops update
+                        spn_start.setSelection(0);
+                        spn_end.setSelection(0);
+                        new FetchStops().execute(transit, 0, "new");
+                    }
+                    else // initial load of an editing route, so don't do regular stops update
+                        initialLoad--;
                 }
             }
 
@@ -340,18 +397,18 @@ public class RouteDetails extends AppCompatActivity {
                     int position = isNewRoute? 0 : index; // a new route or an edited route
                     start = spn_start.getSelectedItem().toString();
                     end = spn_end.getSelectedItem().toString();
-                    transitID = spn_route.getSelectedItemPosition();
-                    startID = spn_start.getSelectedItemPosition();
-                    endID = spn_end.getSelectedItemPosition();
+                    String transitID = transits.get(spn_route.getSelectedItemPosition() - 1).getTransitID();
+                    String startID = stops.get(spn_start.getSelectedItemPosition() - 1).getStopID();
+                    String endID = stops.get(spn_end.getSelectedItemPosition() - 1).getStopID();
 
                     // close and return to MainActivity
                     Bundle bundle = new Bundle();
                     bundle.putInt("position", position);
                     bundle.putString("start", start);
                     bundle.putString("end", end);
-                    bundle.putInt("transitID", transitID);
-                    bundle.putInt("startID", startID);
-                    bundle.putInt("endID", endID);
+                    bundle.putString("transitID", transitID);
+                    bundle.putString("startID", startID);
+                    bundle.putString("endID", endID);
                     intent.putExtras(bundle);
                     setResult(Activity.RESULT_OK, intent);
                     finish();

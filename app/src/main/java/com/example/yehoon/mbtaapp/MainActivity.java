@@ -27,13 +27,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, RouteAdapter.ClickListener {
-    private ArrayList<Transit> transits = new ArrayList<>();
+    private List<Transit> transits = new ArrayList<>();
     private List<Route> routes = new ArrayList<>();
     private RecyclerView recyclerView;
     private RouteAdapter routeAdapter;
@@ -42,6 +43,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // fetch routes
+        new FetchRoutes().execute();
 
         // setup recycler view
         setupRecyclerView();
@@ -59,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Bundle bundle = new Bundle();
                 bundle.putInt("requestCode", 101);
                 bundle.putBoolean("newRoute", true);
-                bundle.putSerializable("transits", transits);
+                bundle.putSerializable("transits", (Serializable) transits);
                 intent.putExtras(bundle);
                 startActivityForResult(intent, 101);
             }
@@ -73,9 +77,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-        // fetch routes
-        new FetchRoutes().execute();
     }
 
     @Override
@@ -128,9 +129,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             int position = (int) params[1];
             String start = (String) params[2];
             String end = (String) params[3];
-            int transitID = (int) params[4];
-            int startID = (int) params[5];
-            int endID = (int) params[6];
+            String transitID = (String) params[4];
+            String startID = (String) params[5];
+            String endID = (String) params[6];
 
             // initial database load
             if(action == null) {
@@ -184,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
 
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, 0, 0, 0);  //MainActivity.this explain this usage
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, null, null, null);  //MainActivity.this explain this usage
 
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
@@ -335,36 +336,38 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         bundle.putBoolean("newRoute", false);
         bundle.putInt("index", index);
         bundle.putSerializable("route", route);
+        bundle.putSerializable("transits", (Serializable) transits);
         intent.putExtras(bundle);
         startActivityForResult(intent, 102);
     }
 
     private void deleteRoute(int position) {
-        new DatabaseAsync(MainActivity.this).execute("delete", position, null, null, 0, 0, 0);
+        new DatabaseAsync(MainActivity.this).execute("delete", position, null, null, null, null, null);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // receive data from RouteDetails
+        // new route receieved from RouteDetails
         if ((requestCode == 101) && (resultCode == Activity.RESULT_OK)) {
             Bundle bundle = data.getExtras();
             int position = bundle.getInt("index");
             String start = bundle.getString("start");
             String end = bundle.getString("end");
-            int transitID = bundle.getInt("transitID");
-            int startID = bundle.getInt("startID");
-            int endID = bundle.getInt("endID");
+            String transitID = bundle.getString("transitID");
+            String startID = bundle.getString("startID");
+            String endID = bundle.getString("endID");
 
             new DatabaseAsync(MainActivity.this).execute("new", position, start, end, transitID, startID, endID);
         }
+        // edit route received from RouteDetails
         else if ((requestCode == 102) && (resultCode == Activity.RESULT_OK)) {
             Bundle bundle = data.getExtras();
             int position = bundle.getInt("position");
             String start = bundle.getString("start");
             String end = bundle.getString("end");
-            int transitID = bundle.getInt("transitID");
-            int startID = bundle.getInt("startID");
-            int endID = bundle.getInt("endID");
+            String transitID = bundle.getString("transitID");
+            String startID = bundle.getString("startID");
+            String endID = bundle.getString("endID");
 
             new DatabaseAsync(MainActivity.this).execute("edit", position, start, end, transitID, startID, endID);
         }

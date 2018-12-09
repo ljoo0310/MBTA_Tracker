@@ -25,17 +25,17 @@ public class Route implements Serializable {
     @ColumnInfo
     private String arrivalTime;
     @ColumnInfo
-    private int transitID;
+    private String transitID;
     @ColumnInfo
-    private int startID;
+    private String startID;
     @ColumnInfo
-    private int endID;
+    private String endID;
 
     public Route() {}
 
     @Ignore
     public Route(int id, String startStop, String endStop, String departureTime, String arrivalTime,
-                 int transitID, int startID, int endID) {
+                 String transitID, String startID, String endID) {
         this.id = id;
         this.startStop = startStop;
         this.endStop = endStop;
@@ -81,24 +81,24 @@ public class Route implements Serializable {
         this.arrivalTime = arrivalTime;
     }
 
-    public int getTransitID() {
+    public String getTransitID() {
         return transitID;
     }
-    public void setTransitID(int transitID) {
+    public void setTransitID(String transitID) {
         this.transitID = transitID;
     }
 
-    public int getStartID() {
+    public String getStartID() {
         return startID;
     }
-    public void setStartID(int startID) {
+    public void setStartID(String startID) {
         this.startID = startID;
     }
 
-    public int getEndID() {
+    public String getEndID() {
         return endID;
     }
-    public void setEndID(int endID) {
+    public void setEndID(String endID) {
         this.endID = endID;
     }
 }
