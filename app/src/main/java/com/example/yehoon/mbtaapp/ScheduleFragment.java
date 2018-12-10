@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 public class ScheduleFragment extends Fragment {
-    private ArrayList<String> departureTimes, arrivalTimes;
+    private ArrayList<Time> departureTimes, arrivalTimes;
     private RecyclerView recyclerView;
     private TextView noTimesFound;
     private TimeAdapter recyclerViewAdapter;
@@ -47,9 +47,7 @@ public class ScheduleFragment extends Fragment {
     private void setupRecyclerView(View rootView) {
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        departureTimes = new ArrayList<>();
-        arrivalTimes = new ArrayList<>();
-        recyclerViewAdapter = new TimeAdapter(departureTimes, arrivalTimes);
+        recyclerViewAdapter = new TimeAdapter(new ArrayList<String>(), new ArrayList<String>());
         recyclerView.setAdapter(recyclerViewAdapter);
     }
 
@@ -62,16 +60,13 @@ public class ScheduleFragment extends Fragment {
     }
 
     private void updateRecyclerView() {
-        if(departureTimes.size() != arrivalTimes.size()) { // must have even numbers for
-            // recycler view display
-            while(departureTimes.size() > arrivalTimes.size()) {
-                departureTimes.remove(departureTimes.size() - 1);
-            }
-            while(departureTimes.size() < arrivalTimes.size()) {
-                arrivalTimes.remove(arrivalTimes.size() - 1);
-            }
+        ArrayList<String> adapterDepartureTimes = new ArrayList<>();
+        ArrayList<String> adapterArrivalTimes = new ArrayList<>();
+        for(int i = 0; i < departureTimes.size(); i++) {
+            adapterDepartureTimes.add(departureTimes.get(i).getTime());
+            adapterArrivalTimes.add(arrivalTimes.get(i).getTime());
         }
-        recyclerViewAdapter = new TimeAdapter(departureTimes, arrivalTimes);
+        recyclerViewAdapter = new TimeAdapter(adapterDepartureTimes, adapterArrivalTimes);
         recyclerView.setAdapter(recyclerViewAdapter);
         Log.d("LUKE", "departureTimes: " + departureTimes.size());
         Log.d("LUKE", "recyclerViewAdapter: " + recyclerViewAdapter.getItemCount());
@@ -110,23 +105,22 @@ public class ScheduleFragment extends Fragment {
         }
 
         fetchDepartures(currentDate, directionID, "09:00", transitID, startStopID, endStopID);
-        //new FetchSchedules().execute(currentDate, directionID, currentTime, transitID, startStopID, "depart");
-        //new FetchSchedules().execute(currentDate, directionID, currentTime, transitID, endStopID, "arrive");
+        //fetchDepartures(currentDate, directionID, currentTime, transitID, startStopID, endStopID);
     }
 
     private void fetchDepartures(String currentDate, String directionID, String currentTime,
                                  String transitID, String startStopID, String endStopID) {
-        new FetchSchedules().execute(currentDate, directionID, currentTime, transitID, startStopID,
-                "depart", endStopID);
+        new FetchDepartures().execute(currentDate, directionID, currentTime, transitID, startStopID,
+                endStopID);
     }
 
     private void fetchArrivals(String currentDate, String directionID, String currentTIme,
                                String transitID, String endStopID, String endStopID2) { // for parameter consistency
-        new FetchSchedules().execute(currentDate, directionID, currentTIme, transitID, endStopID,
+        new FetchArrivals().execute(currentDate, directionID, currentTIme, transitID, endStopID,
                 "arrive", endStopID2);
     }
 
-    private class FetchSchedules extends AsyncTask<Object, Void, String[]> {
+    private class FetchDepartures extends AsyncTask<Object, Void, String[]> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -138,13 +132,11 @@ public class ScheduleFragment extends Fragment {
             String directionID = (String) params[1];
             String minTime = (String) params[2];
             String route = (String) params[3];
-            String stopID = (String) params[4];
-            String isDepartStop = (String) params[5];
-            String endStopID = (String) params[6];
+            String startStopID = (String) params[4];
+            String endStopID = (String) params[5];
 
             int hour = Integer.parseInt(minTime.substring(0, 2)) + 2;
             String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
-            Log.d("LUKE", "max time: " + maxTime);
 
             // Set up variables for the try block that need to be closed in the finally block.
             HttpURLConnection urlConnection = null;
@@ -171,7 +163,7 @@ public class ScheduleFragment extends Fragment {
                         .appendQueryParameter(MIN_TIME, minTime)
                         .appendQueryParameter(MAX_TIME, maxTime)
                         .appendQueryParameter(ROUTE, route)
-                        .appendQueryParameter(STOP, stopID)
+                        .appendQueryParameter(STOP, startStopID)
                         .build();
 
                 URL requestURL = new URL(builtURI.toString());
@@ -218,7 +210,7 @@ public class ScheduleFragment extends Fragment {
             }
 
             String[] boolJSONPair = new String[]{routeJSONString, date, directionID, minTime,
-                    route, endStopID, isDepartStop};
+                    route, endStopID};
             return boolJSONPair;
         }
 
@@ -230,9 +222,6 @@ public class ScheduleFragment extends Fragment {
             String currentTime = s[3];
             String transitID = s[4];
             String endStopID = s[5];
-            boolean isDepartStop = s[6].equals("depart") ? true : false;
-
-            Log.d("LUKE", "isDepartStop: " + s[6]);
 
             try {
                 // Convert the response into a JSON object.
@@ -240,41 +229,35 @@ public class ScheduleFragment extends Fragment {
                 // Get the JSONArray of book items.
                 JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of times
 
-                String timeRequestType;
-                if(isDepartStop)
-                    timeRequestType = "departure_time";
-                else
-                    timeRequestType = "arrival_time";
-                ArrayList<String> times1 = new ArrayList<>(), times2 = new ArrayList<>();
+                ArrayList<Time> times1 = new ArrayList<>(), times2 = new ArrayList<>();
                 int stopSequence1 = 0, stopSequence2 = 0;
                 for(int i = 0; i < itemsArray.length(); i++) {
                     // Get the current item information.
                     JSONObject dataObject = itemsArray.getJSONObject(i);
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
+                    JSONObject relationshipsObject = dataObject.getJSONObject("relationships");
+                    JSONObject tripObject = relationshipsObject.getJSONObject("trip");
+                    JSONObject tripDataObject = tripObject.getJSONObject("data");
 
-                    String time = attributeObject.getString(timeRequestType);
+                    String str_time = attributeObject.getString("departure_time");
+                    String tripID = tripDataObject.getString("id");
                     int stopSequence = attributeObject.getInt("stop_sequence");
                     if(stopSequence1 == 0) {
                         stopSequence1 = stopSequence;
-                        Log.d("LUKE", "stopSequence1 = " + stopSequence1);
                     }
                     else if(stopSequence2 == 0) {
                         stopSequence2 = stopSequence;
-                        Log.d("LUKE", "stopSequence2 = " + stopSequence2);
                     }
+                    Time time = new Time();
+                    time.setTIme(str_time.substring(11, 16));
+                    time.setTripID(tripID);
 
-                    if(stopSequence == stopSequence1) {
-                        times1.add(time.substring(11, 16)); // departureTimes.add(time.substring(11,16));
-                        Log.d("LUKE", "adding time: " + time + " to times1");
-                    }
-                    else if(stopSequence == stopSequence2) {
-                        times2.add(time.substring(11, 16));// arrivalTimes.add(time.substring(11,16));
-                        Log.d("LUKE", "adding time: " + time + " to times2");
-
-                    }
+                    if(stopSequence == stopSequence1)
+                        times1.add(time);
+                    else if(stopSequence == stopSequence2)
+                        times2.add(time);
                 }
-                ArrayList<String> times = new ArrayList<>();
-                Log.d("LUKE", "Heading " + directionID);
+                ArrayList<Time> times = new ArrayList<>();
                 if(directionID.equals("Eastbound")) {
                     if(stopSequence1 < stopSequence2)
                         times = times1;
@@ -287,16 +270,142 @@ public class ScheduleFragment extends Fragment {
                     else
                         times = times1;
                 }
-                if(isDepartStop) {
-                    Log.d("LUKE", "assigning times to departureTimes");
-                    departureTimes = times;
-                    fetchArrivals(currentDate, directionID, currentTime, transitID, endStopID, endStopID);
+                departureTimes = times;
+                fetchArrivals(currentDate, directionID, currentTime, transitID, endStopID, endStopID);
+            } catch (Exception e){
+                // If onPostExecute does not receive a proper JSON string,
+                // update the UI to show failed results.
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class FetchArrivals extends AsyncTask<Object, Void, String[]> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected String[] doInBackground(Object... params) {
+            String date = (String) params[0];
+            String directionID = (String) params[1];
+            String minTime = (String) params[2];
+            String route = (String) params[3];
+            String endStopID = (String) params[4];
+
+            int hour = Integer.parseInt(minTime.substring(0, 2)) + 3;
+            String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
+
+            // Set up variables for the try block that need to be closed in the finally block.
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String routeJSONString = null;
+
+            try {
+                final String START_BASE_URL = "https://api-v3.mbta.com/schedules?";
+                final String API_KEY = "api_key";
+                final String SORT = "sort";
+                final String DATE = "filter[date]";
+                final String DIRECTION = "filter[direction_id]";
+                final String MIN_TIME = "filter[min_time]";
+                final String MAX_TIME = "filter[max_time]";
+                final String ROUTE = "filter[route]";
+                final String STOP = "filter[stop]";
+
+                // Build up your query URI, limiting results to 10 items and printed movies.
+                Uri builtURI = Uri.parse(START_BASE_URL).buildUpon()
+                        .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
+                        .appendQueryParameter(SORT, "arrival_time")
+                        .appendQueryParameter(DATE, date)
+                        .appendQueryParameter(DIRECTION, directionID)
+                        .appendQueryParameter(MIN_TIME, minTime)
+                        .appendQueryParameter(MAX_TIME, maxTime)
+                        .appendQueryParameter(ROUTE, route)
+                        .appendQueryParameter(STOP, endStopID)
+                        .build();
+
+                URL requestURL = new URL(builtURI.toString());
+
+                // Open the network connection.
+                urlConnection = (HttpURLConnection) requestURL.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                // Get the InputStream.
+                InputStream inputStream = urlConnection.getInputStream();
+
+                // Read the response string into a StringBuilder.
+                StringBuilder builder = new StringBuilder();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // but it does make debugging a *lot* easier if you print out the completed buffer for debugging.
+                    builder.append(line + "\n");
+                    publishProgress();
                 }
-                else {
-                    Log.d("LUKE", "assigning times to arrivalTimes");
-                    arrivalTimes = times;
-                    updateRecyclerView();
+
+                if (builder.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    // return null;
+                    return null;
                 }
+                routeJSONString = builder.toString();
+            } catch (IOException e) { // Catch errors.
+                e.printStackTrace();
+            } finally { // Close the connections.
+                if (urlConnection != null)
+                    urlConnection.disconnect();
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            String[] boolJSONPair = new String[]{routeJSONString, date, directionID, minTime,
+                    route, endStopID};
+            return boolJSONPair;
+        }
+
+        @Override
+        protected void onPostExecute(String[] s) {
+            String routeJSONString = s[0];
+
+            try {
+                // Convert the response into a JSON object.
+                JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
+                // Get the JSONArray of book items.
+                JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of times
+
+                arrivalTimes = new ArrayList<>();
+                int index = 0, departureTimeCounter = 0;
+                while(departureTimeCounter < departureTimes.size()) {
+                    // Get the current item information.
+                    JSONObject dataObject = itemsArray.getJSONObject(index);
+                    JSONObject attributeObject = dataObject.getJSONObject("attributes");
+                    JSONObject relationshipsObject = dataObject.getJSONObject("relationships");
+                    JSONObject tripObject = relationshipsObject.getJSONObject("trip");
+                    JSONObject tripDataObject = tripObject.getJSONObject("data");
+
+                    String str_time = attributeObject.getString("arrival_time");
+                    String tripID = tripDataObject.getString("id");
+
+                    if(tripID.equals(departureTimes.get(departureTimeCounter).getTripID())) {
+                        Time time = new Time();
+                        time.setTIme(str_time.substring(11, 16));
+                        time.setTripID(tripID);
+                        arrivalTimes.add(time);
+                        departureTimeCounter++;
+                    }
+                    index++;
+                }
+                updateRecyclerView();
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
                 // update the UI to show failed results.
