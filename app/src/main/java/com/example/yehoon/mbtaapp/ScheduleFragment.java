@@ -56,7 +56,7 @@ public class ScheduleFragment extends Fragment {
         tv_progress.setVisibility(View.GONE);
         // show if no times found
         tv_noTimesFound = (TextView) rootView.findViewById(R.id.tv_no_times_found);
-        tv_noTimesFound.setText("Select the start and end stops to see the train times.");
+        tv_noTimesFound.setText("Select start and end stops to see the train times.");
         if(recyclerViewAdapter.getItemCount() == 0)
             tv_noTimesFound.setVisibility(View.VISIBLE);
     }
@@ -74,28 +74,35 @@ public class ScheduleFragment extends Fragment {
             recyclerView.setVisibility(View.GONE);
             tv_noTimesFound.setVisibility(View.VISIBLE);
         } else
+            recyclerView.setVisibility(View.VISIBLE);
             tv_noTimesFound.setVisibility(View.GONE);
     }
 
     public void updateTimes(String transitID, String startStopID, String endStopID, String directionID) {
-        Calendar calendar = Calendar.getInstance();
-        String currentTime = new SimpleDateFormat("HH:mm").format(calendar.getTime());
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
-        int hours = Integer.parseInt(currentTime.substring(0, 2));
-
-        if(0 <= hours && hours < 2) {
-            hours += 24;
-            String minutes = currentTime.substring(2, 5);
-            currentTime = Integer.toString(hours) + minutes;
-            /*
-            calendar.add(Calendar.DATE, -1);
-            currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
-            */
+        if(transitID.equals("Choose") || startStopID.equals("Choose") || endStopID.equals("Choose")) {
+            tv_noTimesFound.setText("Select start and end stops to see the train times.");
+            tv_noTimesFound.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
         }
+        else {
+            Calendar calendar = Calendar.getInstance();
+            String currentTime = new SimpleDateFormat("HH:mm").format(calendar.getTime());
+            String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
+            int hours = Integer.parseInt(currentTime.substring(0, 2));
 
-        tv_noTimesFound.setVisibility(View.GONE);
-        fetchDepartures(currentDate, directionID, "09:00", transitID, startStopID, endStopID);
-        //fetchDepartures(currentDate, directionID, currentTime, transitID, startStopID, endStopID);
+            if (0 <= hours && hours < 2) {
+                hours += 24;
+                String minutes = currentTime.substring(2, 5);
+                currentTime = Integer.toString(hours) + minutes;
+
+                // to display as 24:xx, need to set back current date by 1 day
+                calendar.add(Calendar.DATE, -1);
+                currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
+            }
+
+            tv_noTimesFound.setVisibility(View.GONE);
+            fetchDepartures(currentDate, directionID, currentTime, transitID, startStopID, endStopID);
+        }
     }
 
     private void fetchDepartures(String currentDate, String directionID, String currentTime,
@@ -105,9 +112,8 @@ public class ScheduleFragment extends Fragment {
     }
 
     private void fetchArrivals(String currentDate, String directionID, String currentTIme,
-                               String transitID, String endStopID, String endStopID2) { // for parameter consistency
-        new FetchArrivals().execute(currentDate, directionID, currentTIme, transitID, endStopID,
-                "arrive", endStopID2);
+                               String transitID, String endStopID) {
+        new FetchArrivals().execute(currentDate, directionID, currentTIme, transitID, endStopID);
     }
 
     private class FetchDepartures extends AsyncTask<Object, Integer, String[]> {
@@ -268,7 +274,7 @@ public class ScheduleFragment extends Fragment {
                 departureTimes = times;
                 tv_progress.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
-                fetchArrivals(currentDate, directionID, currentTime, transitID, endStopID, endStopID);
+                fetchArrivals(currentDate, directionID, currentTime, transitID, endStopID);
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
                 // update the UI to show failed results.
@@ -282,7 +288,7 @@ public class ScheduleFragment extends Fragment {
         }
     }
 
-    private class FetchArrivals extends AsyncTask<Object, Integer, String[]> {
+    private class FetchArrivals extends AsyncTask<Object, Integer, String> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -294,12 +300,12 @@ public class ScheduleFragment extends Fragment {
         }
 
         @Override
-        protected String[] doInBackground(Object... params) {
+        protected String doInBackground(Object... params) {
             String date = (String) params[0];
             String directionID = (String) params[1];
             String minTime = (String) params[2];
             String route = (String) params[3];
-            String endStopID = (String) params[4];
+            String stop = (String) params[4];
 
             int hour = Integer.parseInt(minTime.substring(0, 2)) + 2;
             String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
@@ -329,7 +335,7 @@ public class ScheduleFragment extends Fragment {
                         .appendQueryParameter(MIN_TIME, minTime)
                         .appendQueryParameter(MAX_TIME, maxTime)
                         .appendQueryParameter(ROUTE, route)
-                        .appendQueryParameter(STOP, endStopID)
+                        .appendQueryParameter(STOP, stop)
                         .build();
 
                 URL requestURL = new URL(builtURI.toString());
@@ -375,14 +381,12 @@ public class ScheduleFragment extends Fragment {
                 }
             }
 
-            String[] boolJSONPair = new String[]{routeJSONString, date, directionID, minTime,
-                    route, endStopID};
-            return boolJSONPair;
+            return routeJSONString;
         }
 
         @Override
-        protected void onPostExecute(String[] s) {
-            String routeJSONString = s[0];
+        protected void onPostExecute(String s) {
+            String routeJSONString = s;
 
             try {
                 // Convert the response into a JSON object.

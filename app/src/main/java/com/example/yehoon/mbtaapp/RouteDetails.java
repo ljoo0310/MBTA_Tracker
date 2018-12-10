@@ -10,7 +10,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -34,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RouteDetails extends AppCompatActivity {
-    private boolean startSelected, endSelected;
     private List<Stop> stops;
     private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
@@ -429,19 +427,13 @@ public class RouteDetails extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 startPosition = position;
-                if(startPosition == 0)
-                    startSelected = false;
-                else if(startPosition == endPosition) {
-                    startSelected = false;
+                if(startPosition == endPosition) {
                     spn_start.setSelection(0);
                     Toast.makeText(RouteDetails.this, "The start and end stop can't be" +
                                     " the same! Please select a different stop.",
                             Toast.LENGTH_SHORT).show();
                 }
-                else
-                    startSelected = true;
-                if(startSelected && endSelected)
-                    updateSchedule();
+                updateSchedule();
             }
 
             @Override
@@ -452,19 +444,13 @@ public class RouteDetails extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 endPosition = position;
-                if(endPosition == 0)
-                    endSelected = false;
-                else if(startPosition == endPosition) {
-                    endSelected = false;
+                if(startPosition == endPosition) {
                     spn_end.setSelection(0);
                     Toast.makeText(RouteDetails.this, "The start and end stop can't be" +
                                     " the same! Please select a different stop.",
                             Toast.LENGTH_SHORT).show();
                 }
-                else
-                    endSelected = true;
-                if(startSelected && endSelected)
-                    updateSchedule();
+                updateSchedule();
             }
 
             @Override
@@ -526,13 +512,29 @@ public class RouteDetails extends AppCompatActivity {
     }
 
     private void updateSchedule() {
-        Transit transit = transits.get(routePosition - 1);
-        String transitID = transit.getTransitID();
+        String transitID;
+        if(routePosition - 1 < 0)
+            transitID = "Choose";
+        else {
+            Transit transit = transits.get(routePosition - 1);
+            transitID = transit.getTransitID();
+        }
 
-        Stop startStop = stops.get(startPosition - 1);
-        String startStopID = startStop.getStopID();
-        Stop endStop = stops.get(endPosition - 1);
-        String endStopID = endStop.getStopID();
+        String startStopID;
+        if(startPosition - 1 < 0)
+            startStopID = "Choose";
+        else {
+            Stop startStop = stops.get(startPosition - 1);
+            startStopID = startStop.getStopID();
+        }
+
+        String endStopID;
+        if(endPosition - 1 < 0)
+            endStopID = "Choose";
+        else {
+            Stop endStop = stops.get(endPosition - 1);
+            endStopID = endStop.getStopID();
+        }
 
         String directionID = startPosition < endPosition ? "Eastbound" : "Westbound";
 

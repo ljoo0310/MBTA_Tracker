@@ -39,5 +39,6 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 
     public void updateTimes(String transitID, String startStopID, String endStopID, String directionID) {
         scheduleFragment.updateTimes(transitID, startStopID, endStopID, directionID);
+        predictionFragment.updateTimes(transitID, startStopID, endStopID, directionID);
     }
 }
