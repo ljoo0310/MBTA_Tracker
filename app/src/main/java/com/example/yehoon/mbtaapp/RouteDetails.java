@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RouteDetails extends AppCompatActivity {
+    private boolean startSelected, endSelected;
     private List<Stop> stops;
     private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
@@ -431,6 +432,36 @@ public class RouteDetails extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {}
         });
+
+        spn_start.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(position == 0)
+                    startSelected = false;
+                else
+                    startSelected = true;
+                if(startSelected && endSelected)
+                    updateSchedule();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        spn_end.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(position == 0)
+                    endSelected = false;
+                else
+                    endSelected = true;
+                if(startSelected && endSelected)
+                    updateSchedule();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
     }
 
     private void initButton() {
@@ -484,5 +515,9 @@ public class RouteDetails extends AppCompatActivity {
         }
         // SHOULD NOT REACH HERE
         return new Stop();
+    }
+
+    private void updateSchedule() {
+        Toast.makeText(RouteDetails.this, "Update schedule now!", Toast.LENGTH_SHORT).show();
     }
 }
