@@ -39,13 +39,14 @@ public class RouteDetails extends AppCompatActivity {
     private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
     private boolean isNewRoute;
-    private int index, startPosition, endPosition;
+    private int index, routePosition, startPosition, endPosition;
     private int initEditLoad = 0; // int to check if need initial load
     private int initSpnRouteLoad = 1; // int to check if FetchRoute needs to initialize spn_route
     private int transitIndex = -1; // to index route spinner
     private Intent intent;
+    private PagerAdapter pagerAdapter;
     private Spinner spn_route, spn_start, spn_end;
-    private String start, end;
+    private String startName, endName;
     private String editTransitID = ""; // to pass into FetchStops
     private Route route;
 
@@ -265,13 +266,9 @@ public class RouteDetails extends AppCompatActivity {
                         spn_end.setSelection(endIndex + 1);
                         initEditLoad = 1;
                     }
-                    Log.d("LUKE", "before initSpnRouteLoad = " + initSpnRouteLoad);
                     if(initSpnRouteLoad > 0) {
-                        Log.d("LUKE", "calling initSpnRoute()");
                         initSpnRoute();
-                        Log.d("LUKE", "called initSpnRoute()");
                         initSpnRouteLoad--;
-                        Log.d("LUKE", "after initSpnRouteLoad = " + initSpnRouteLoad);
                     }
                 } catch (Exception e){
                     // If onPostExecute does not receive a proper JSON string,
@@ -322,8 +319,8 @@ public class RouteDetails extends AppCompatActivity {
         // Each page is represented by its own fragment.
         // This is another example of the adapter pattern.
         final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
-        final PagerAdapter adapter = new PagerAdapter (getSupportFragmentManager(), tabLayout.getTabCount());
-        viewPager.setAdapter(adapter);
+        pagerAdapter = new PagerAdapter (getSupportFragmentManager(), tabLayout.getTabCount());
+        viewPager.setAdapter(pagerAdapter);
         // Setting a listener for clicks.
         viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -383,7 +380,6 @@ public class RouteDetails extends AppCompatActivity {
             spn_start.setEnabled(false);
             spn_end.setEnabled(false);
             // initialization for spn_route listener when no editing route
-            Log.d("LUKE", "calling FetchStops for new route");
             new FetchStops().execute(null, -1, null);
         }
         // editing an existing route
@@ -396,16 +392,15 @@ public class RouteDetails extends AppCompatActivity {
                 }
             }
             // initialization for spn_route listener and editing route
-            Log.d("LUKE", "calling FetchStops for editing route");
             new FetchStops().execute(editTransitID, transitIndex, "edit");
         }
     }
 
     private void initSpnRoute() {
-        Log.d("LUKE", "initSpnRoute called");
         spn_route.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                routePosition = position;
                 if(position == 0) {
                     spn_start.setEnabled(false);
                     spn_end.setEnabled(false);
@@ -413,16 +408,13 @@ public class RouteDetails extends AppCompatActivity {
                     spn_end.setSelection(0);
                 }
                 else {
-                    Log.d("LUKE", "start end spinners enabled");
                     spn_start.setEnabled(true);
                     spn_end.setEnabled(true);
                     String transit = transits.get(spn_route.getSelectedItemPosition() - 1)
                             .getTransitID(); // do -1 for "Choose" value
                     if(initEditLoad == 0) { // carry on regular stops update
-                        Log.d("LUKE", "initEditLoad = 0");
                         spn_start.setSelection(0);
                         spn_end.setSelection(0);
-                        Log.d("LUKE", "FetchStops for new");
                         new FetchStops().execute(transit, 0, "new");
                     }
                     else // initial load of an editing route, so don't do regular stops update
@@ -501,8 +493,8 @@ public class RouteDetails extends AppCompatActivity {
                     Toast.makeText(RouteDetails.this, "End stop not selected!", Toast.LENGTH_SHORT).show();
                 else {
                     int position = isNewRoute? 0 : index; // a new route or an edited route
-                    start = spn_start.getSelectedItem().toString();
-                    end = spn_end.getSelectedItem().toString();
+                    startName = spn_start.getSelectedItem().toString();
+                    endName = spn_end.getSelectedItem().toString();
                     String transitID = transits.get(spn_route.getSelectedItemPosition() - 1).getTransitID();
                     String startID = stops.get(spn_start.getSelectedItemPosition() - 1).getStopID();
                     String endID = stops.get(spn_end.getSelectedItemPosition() - 1).getStopID();
@@ -510,8 +502,8 @@ public class RouteDetails extends AppCompatActivity {
                     // close and return to MainActivity
                     Bundle bundle = new Bundle();
                     bundle.putInt("position", position);
-                    bundle.putString("start", start);
-                    bundle.putString("end", end);
+                    bundle.putString("startName", startName);
+                    bundle.putString("endName", endName);
                     bundle.putString("transitID", transitID);
                     bundle.putString("startID", startID);
                     bundle.putString("endID", endID);
@@ -535,5 +527,17 @@ public class RouteDetails extends AppCompatActivity {
 
     private void updateSchedule() {
         Toast.makeText(RouteDetails.this, "Update schedule now!", Toast.LENGTH_SHORT).show();
+
+        Transit transit = transits.get(routePosition - 1);
+        String transitID = transit.getTransitID();
+
+        Stop startStop = stops.get(startPosition - 1);
+        String startStopID = startStop.getStopID();
+        Stop endStop = stops.get(endPosition - 1);
+        String endStopID = endStop.getStopID();
+
+        String directionID = startPosition < endPosition ? "Eastbound" : "Westbound";
+
+        pagerAdapter.updateTimes(transitID, startStopID, endStopID, directionID);
     }
 }

@@ -8,10 +8,12 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class TimeAdapter extends RecyclerView.Adapter<TimeAdapter.TimeHolder> {
-    private String[] departureTimes, arrivalTimes;
+import java.util.ArrayList;
 
-    public TimeAdapter(String[] departureTimes, String[] arrivalTimes) {
+public class TimeAdapter extends RecyclerView.Adapter<TimeAdapter.TimeHolder> {
+    private ArrayList<String> departureTimes, arrivalTimes;
+
+    public TimeAdapter(ArrayList<String> departureTimes, ArrayList<String> arrivalTimes) {
         this.departureTimes = departureTimes;
         this.arrivalTimes = arrivalTimes;
     }
@@ -37,12 +39,12 @@ public class TimeAdapter extends RecyclerView.Adapter<TimeAdapter.TimeHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull TimeHolder holder, int position) {
-        holder.tv_departureTime.setText(departureTimes[position]);
-        holder.tv_arrivalTime.setText(arrivalTimes[position]);
+        holder.tv_departureTime.setText(departureTimes.get(position));
+        holder.tv_arrivalTime.setText(arrivalTimes.get(position));
     }
 
     @Override
     public int getItemCount() {
-        return departureTimes.length;
+        return departureTimes.size();
     }
 }

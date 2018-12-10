@@ -164,8 +164,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         protected List<Route> doInBackground(Object... params) {
             String action = (String) params[0];
             int position = (int) params[1];
-            String start = (String) params[2];
-            String end = (String) params[3];
+            String startName = (String) params[2];
+            String endName = (String) params[3];
             String transitID = (String) params[4];
             String startID = (String) params[5];
             String endID = (String) params[6];
@@ -178,8 +178,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             // add a new route
             else if(action.equals("new")) {
                 Route route = new Route();
-                route.setStartStop(start);
-                route.setEndStop(end);
+                route.setStartStop(startName);
+                route.setEndStop(endName);
                 route.setTransitID(transitID);
                 route.setStartID(startID);
                 route.setEndID(endID);
@@ -189,8 +189,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             // edit a route
             else if(action.equals("edit")) {
                 Route route = RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().getRoutes().get(position);
-                route.setStartStop(start);
-                route.setEndStop(end);
+                route.setStartStop(startName);
+                route.setEndStop(endName);
                 route.setTransitID(transitID);
                 route.setStartID(startID);
                 route.setEndID(endID);
@@ -374,25 +374,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if ((requestCode == 101) && (resultCode == Activity.RESULT_OK)) {
             Bundle bundle = data.getExtras();
             int position = bundle.getInt("index");
-            String start = bundle.getString("start");
-            String end = bundle.getString("end");
+            String startName = bundle.getString("startName");
+            String endName = bundle.getString("endName");
             String transitID = bundle.getString("transitID");
             String startID = bundle.getString("startID");
             String endID = bundle.getString("endID");
 
-            new DatabaseAsync(MainActivity.this).execute("new", position, start, end, transitID, startID, endID);
+            new DatabaseAsync(MainActivity.this).execute("new", position, startName, endName, transitID, startID, endID);
         }
         // edit route received from RouteDetails
         else if ((requestCode == 102) && (resultCode == Activity.RESULT_OK)) {
             Bundle bundle = data.getExtras();
             int position = bundle.getInt("position");
-            String start = bundle.getString("start");
-            String end = bundle.getString("end");
+            String startName = bundle.getString("startName");
+            String endName = bundle.getString("endName");
             String transitID = bundle.getString("transitID");
             String startID = bundle.getString("startID");
             String endID = bundle.getString("endID");
 
-            new DatabaseAsync(MainActivity.this).execute("edit", position, start, end, transitID, startID, endID);
+            new DatabaseAsync(MainActivity.this).execute("edit", position, startName, endName, transitID, startID, endID);
         }
     }
 
