@@ -1,27 +1,24 @@
 package com.example.yehoon.mbtaapp;
 
-import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -30,8 +27,9 @@ import java.util.Calendar;
 
 public class ScheduleFragment extends Fragment {
     private ArrayList<Time> departureTimes, arrivalTimes;
+    private ProgressBar progressBar;
     private RecyclerView recyclerView;
-    private TextView noTimesFound;
+    private TextView tv_noTimesFound, tv_progress;
     private TimeAdapter recyclerViewAdapter;
 
     @Override
@@ -52,11 +50,15 @@ public class ScheduleFragment extends Fragment {
     }
 
     private void initView(View rootView) {
+        tv_progress = (TextView) rootView.findViewById(R.id.tv_progress);
+        tv_progress.setVisibility(View.GONE);
+        progressBar = (ProgressBar) rootView.findViewById(R.id.progressBar);
+        tv_progress.setVisibility(View.GONE);
         // show if no times found
-        noTimesFound = (TextView) rootView.findViewById(R.id.tv_no_times_found);
-        noTimesFound.setText("Select the start and end stops to see the train times.");
+        tv_noTimesFound = (TextView) rootView.findViewById(R.id.tv_no_times_found);
+        tv_noTimesFound.setText("Select the start and end stops to see the train times.");
         if(recyclerViewAdapter.getItemCount() == 0)
-            noTimesFound.setVisibility(View.VISIBLE);
+            tv_noTimesFound.setVisibility(View.VISIBLE);
     }
 
     private void updateRecyclerView() {
@@ -68,16 +70,11 @@ public class ScheduleFragment extends Fragment {
         }
         recyclerViewAdapter = new TimeAdapter(adapterDepartureTimes, adapterArrivalTimes);
         recyclerView.setAdapter(recyclerViewAdapter);
-        Log.d("LUKE", "departureTimes: " + departureTimes.size());
-        Log.d("LUKE", "recyclerViewAdapter: " + recyclerViewAdapter.getItemCount());
         if (departureTimes.size() == 0) {
             recyclerView.setVisibility(View.GONE);
-            noTimesFound.setVisibility(View.VISIBLE);
-            Log.d("LUKE", "noTimesFound set to VISIBLE");
-        } else {
-            noTimesFound.setVisibility(View.GONE);
-            Log.d("LUKE", "noTimesFound set to GONE");
-        }
+            tv_noTimesFound.setVisibility(View.VISIBLE);
+        } else
+            tv_noTimesFound.setVisibility(View.GONE);
     }
 
     public void updateTimes(String transitID, String startStopID, String endStopID, String directionID) {
@@ -86,24 +83,17 @@ public class ScheduleFragment extends Fragment {
         String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
         int hours = Integer.parseInt(currentTime.substring(0, 2));
 
-        Log.d("LUKE", "current time: " + currentTime);
-        Log.d("LUKE", "current date: " + currentDate);
-        Log.d("LUKE", "hours: " + hours);
-
         if(0 <= hours && hours < 2) {
             hours += 24;
             String minutes = currentTime.substring(2, 5);
             currentTime = Integer.toString(hours) + minutes;
-
-            Log.d("LUKE", "minutes: " + minutes);
-            Log.d("LUKE", "current time updated: " + currentTime);
             /*
             calendar.add(Calendar.DATE, -1);
             currentDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
-            Log.d("LUKE", "current date changed: " + currentDate);
             */
         }
 
+        tv_noTimesFound.setVisibility(View.GONE);
         fetchDepartures(currentDate, directionID, "09:00", transitID, startStopID, endStopID);
         //fetchDepartures(currentDate, directionID, currentTime, transitID, startStopID, endStopID);
     }
@@ -120,10 +110,15 @@ public class ScheduleFragment extends Fragment {
                 "arrive", endStopID2);
     }
 
-    private class FetchDepartures extends AsyncTask<Object, Void, String[]> {
+    private class FetchDepartures extends AsyncTask<Object, Integer, String[]> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            tv_progress.setText("Loading departure times...");
+            tv_progress.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setMax(100);
+            progressBar.setProgress(0);
         }
 
         @Override
@@ -135,7 +130,7 @@ public class ScheduleFragment extends Fragment {
             String startStopID = (String) params[4];
             String endStopID = (String) params[5];
 
-            int hour = Integer.parseInt(minTime.substring(0, 2)) + 2;
+            int hour = Integer.parseInt(minTime.substring(0, 2)) + 1;
             String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
 
             // Set up variables for the try block that need to be closed in the finally block.
@@ -271,6 +266,8 @@ public class ScheduleFragment extends Fragment {
                         times = times1;
                 }
                 departureTimes = times;
+                tv_progress.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
                 fetchArrivals(currentDate, directionID, currentTime, transitID, endStopID, endStopID);
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
@@ -278,12 +275,22 @@ public class ScheduleFragment extends Fragment {
                 e.printStackTrace();
             }
         }
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            progressBar.incrementProgressBy(10);
+        }
     }
 
-    private class FetchArrivals extends AsyncTask<Object, Void, String[]> {
+    private class FetchArrivals extends AsyncTask<Object, Integer, String[]> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            tv_progress.setText("Loading arrival times...");
+            tv_progress.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setMax(100);
+            progressBar.setProgress(0);
         }
 
         @Override
@@ -294,7 +301,7 @@ public class ScheduleFragment extends Fragment {
             String route = (String) params[3];
             String endStopID = (String) params[4];
 
-            int hour = Integer.parseInt(minTime.substring(0, 2)) + 3;
+            int hour = Integer.parseInt(minTime.substring(0, 2)) + 2;
             String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
 
             // Set up variables for the try block that need to be closed in the finally block.
@@ -405,12 +412,20 @@ public class ScheduleFragment extends Fragment {
                     }
                     index++;
                 }
+                tv_progress.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
                 updateRecyclerView();
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
                 // update the UI to show failed results.
                 e.printStackTrace();
             }
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            progressBar.incrementProgressBy(10);
         }
     }
 }

@@ -526,8 +526,6 @@ public class RouteDetails extends AppCompatActivity {
     }
 
     private void updateSchedule() {
-        Toast.makeText(RouteDetails.this, "Update schedule now!", Toast.LENGTH_SHORT).show();
-
         Transit transit = transits.get(routePosition - 1);
         String transitID = transit.getTransitID();
 
