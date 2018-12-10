@@ -39,7 +39,7 @@ public class RouteDetails extends AppCompatActivity {
     private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
     private boolean isNewRoute;
-    private int index;
+    private int index, startPosition, endPosition;
     private int initEditLoad = 0; // int to check if need initial load
     private int initSpnRouteLoad = 1; // int to check if FetchRoute needs to initialize spn_route
     private int transitIndex = -1; // to index route spinner
@@ -436,8 +436,16 @@ public class RouteDetails extends AppCompatActivity {
         spn_start.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(position == 0)
+                startPosition = position;
+                if(startPosition == 0)
                     startSelected = false;
+                else if(startPosition == endPosition) {
+                    startSelected = false;
+                    spn_start.setSelection(0);
+                    Toast.makeText(RouteDetails.this, "The start and end stop can't be" +
+                                    " the same! Please select a different stop.",
+                            Toast.LENGTH_SHORT).show();
+                }
                 else
                     startSelected = true;
                 if(startSelected && endSelected)
@@ -451,8 +459,16 @@ public class RouteDetails extends AppCompatActivity {
         spn_end.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(position == 0)
+                endPosition = position;
+                if(endPosition == 0)
                     endSelected = false;
+                else if(startPosition == endPosition) {
+                    endSelected = false;
+                    spn_end.setSelection(0);
+                    Toast.makeText(RouteDetails.this, "The start and end stop can't be" +
+                                    " the same! Please select a different stop.",
+                            Toast.LENGTH_SHORT).show();
+                }
                 else
                     endSelected = true;
                 if(startSelected && endSelected)
