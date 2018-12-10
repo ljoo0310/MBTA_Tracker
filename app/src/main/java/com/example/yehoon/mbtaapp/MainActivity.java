@@ -16,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, RouteAdapter.ClickListener {
+    private boolean transitsLoaded = false;
     private List<Transit> transits = new ArrayList<>();
     private List<Route> routes = new ArrayList<>();
     private RecyclerView recyclerView;
@@ -49,30 +52,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // show if no routes found
         noRoutesFound = (TextView) findViewById(R.id.tv_no_routes_found);
 
-        // fetch routes
-        new FetchRoutes().execute();
-
         // setup recycler view
         setupRecyclerView();
 
         // setup toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_fragment);
         setSupportActionBar(toolbar);
-
-        // setup floating action button
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, RouteDetails.class);
-                Bundle bundle = new Bundle();
-                bundle.putInt("requestCode", 101);
-                bundle.putBoolean("newRoute", true);
-                bundle.putSerializable("transits", (Serializable) transits);
-                intent.putExtras(bundle);
-                startActivityForResult(intent, 101);
-            }
-        });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -82,6 +67,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // fetch routes
+        new FetchRoutes().execute();
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(!transitsLoaded) {
+                    Toast.makeText(MainActivity.this, "Transits not loaded yet...\nPlease wait and try again", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Intent intent = new Intent(MainActivity.this, RouteDetails.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putInt("requestCode", 101);
+                    bundle.putBoolean("newRoute", true);
+                    bundle.putSerializable("transits", (Serializable) transits);
+                    intent.putExtras(bundle);
+                    startActivityForResult(intent, 101);
+                }
+            }
+        });
     }
 
     @Override
@@ -113,6 +120,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void setupRecyclerView() {
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
+
+        // initial database load
+        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, null, null, null);
+
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {}
+
+            @Override
+            public void onLongClick(View view, int position) {
+                showActionsDialog(position);
+            }
+        }));
+    }
+
+    private void setupFAB() {
+        // setup floating action button
+
     }
 
     public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
@@ -189,24 +219,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    private void setupRecyclerView() {
-        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false));
-
-        // initial database load
-        new DatabaseAsync(MainActivity.this).execute(null, -1, null, null, null, null, null);
-
-        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
-            @Override
-            public void onClick(View view, int position) {}
-
-            @Override
-            public void onLongClick(View view, int position) {
-                showActionsDialog(position);
-            }
-        }));
-    }
-
     private class FetchRoutes extends AsyncTask<Void, Void, String> {
         @Override
         protected void onPreExecute() {
@@ -234,7 +246,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .appendQueryParameter(MAX_RESULTS, "4")
                         .build();
 
-                URL requestURL = new URL(builtURI.toString());
+                //URL requestURL = new URL(builtURI.toString());
+                URL requestURL = new URL("https://api-v3.mbta.com/routes?type=0&sort=long_name&page[limit]=4");
 
                 // Open the network connection.
                 urlConnection = (HttpURLConnection) requestURL.openConnection();
@@ -304,7 +317,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     transits.add(transit);
                     i++;
                 }
-                // new loadDataBase(db, recyclerView,  adapter, context).execute(items); //now enter all the data in db
+                transitsLoaded = true;
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
                 // update the UI to show failed results.

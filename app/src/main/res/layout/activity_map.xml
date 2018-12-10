@@ -1,43 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="10dp"
-    tools:ignore="MissingPrefix"
-    >
+    tools:ignore="MissingPrefix">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar_activity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        map:popupTheme="@style/AppTheme.PopupOverlay"
+        map:titleTextColor="@color/white" />
 
     <TextView
+        android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="10dp"
+        android:layout_marginTop="8dp"
         android:text="Find your stops!"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintHorizontal_bias="0.5"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toBottomOf="@+id/toolbar_activity" />
 
     <fragment
-        android:name="com.google.android.gms.maps.MapFragment"
         android:id="@+id/the_map"
+        android:name="com.google.android.gms.maps.MapFragment"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        map:cameraTargetLat="40"
-        map:cameraTargetLng="-110"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        map:cameraTargetLat="42.3355"
+        map:cameraTargetLng="-71.1685"
         map:cameraTilt="45"
-        map:uiZoomControls="true"
         map:cameraZoom="3"
-        />
+        map:layout_constraintBottom_toBottomOf="parent"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toBottomOf="@+id/textView"
+        map:uiZoomControls="true" />
 
-    <TextView
-        android:id="@+id/instructions"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="5dp"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:text="Tap on a marker for details." />
-
-</LinearLayout>
+</android.support.constraint.ConstraintLayout>

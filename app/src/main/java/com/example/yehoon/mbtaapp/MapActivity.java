@@ -1,15 +1,11 @@
 package com.example.yehoon.mbtaapp;
 
 import android.content.Intent;
-import android.location.Address;
-import android.location.Geocoder;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -18,53 +14,28 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class MapActivity {// extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapLoadedCallback {
-    /*
-//public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapLoadedCallback, GoogleMap.OnMarkerClickListener {
-private double lat1,lon1;
-    Geocoder geocoder = null;
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapLoadedCallback {
+    private boolean startValid, endValid;
     private GoogleMap map;
-    private LatLng latLng;
-    ArrayList<String> locations; //will contain all the locations
-    private Route route;
-    private String country;
+    private LatLng latLng_start, latLng_end;
+    private Stop startStop, endStop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle("Mapper");
-        actionBar.setDisplayHomeAsUpEnabled(true);  //helps with returning to our MainActivity
+        initToolbar();
+        receiveIntent();
 
-        geocoder = new Geocoder(this);
-        locations = new ArrayList<String>();
-
-        // This fetches the addresses from a bundle and places them in an ArrayList
-        // ArrayList will be used later by GeoCoder
-        Intent routeIntent = getIntent();
-        Bundle routeBundle = routeIntent.getExtras();
-
-        route = (Route) routeBundle.getSerializable("route");
-
-        lat1 = eq.getLat();
-        lon1 = eq.getLon();
-
-        String msg = "Lng: " + eq.getLon()+ " Lat: " + eq.getLat() + " depth: " + eq.getDepth();
-        Log.v("in map",msg);
-        System.out.println(msg);
         //gets the maps to load
         MapFragment mf = (MapFragment) getFragmentManager().findFragmentById(R.id.the_map);
         mf.getMapAsync(this);
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -73,14 +44,8 @@ private double lat1,lon1;
         //needed since we use fragments to map sites
         switch (item.getItemId()) {
             case android.R.id.home:
-                System.out.println("1. here here in go back");
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                System.out.println("2. here here in go back");
                 finish();
                 return true;
-
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -96,54 +61,70 @@ private double lat1,lon1;
     }
 
     // maps are loaded and this is where I should perform the getMoreInfo() to grab more data
-    //note use of geocoder.getFromLocationName() to find LonLat from address
     @Override
     public void onMapLoaded() {
-        // code to run when the map has loaded
-        getMoreInfo(); // call this --> use a geoCoder to find the location of the eq
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 5));
+        if(map != null) {
+            // code to run when the map has loaded
+            getMoreInfo(); // call this --> use a geoCoder to find the location of the eq
 
-        map.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
-            @Override
-            public void onInfoWindowClick(Marker marker) {
-                Toast.makeText(getApplicationContext(), "Info window clicked", Toast.LENGTH_LONG).show();
-                String url = "http://www.google.com/#q=";
-                String query = eq.getEQID().trim();
-                String final_url = url + query;
-                Uri uri = Uri.parse(final_url);
-                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+            if(startValid && endValid) {
+                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                builder.include(latLng_start);
+                builder.include(latLng_end);
+                LatLngBounds bound = builder.build();
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bound, 75));
             }
-        });
+            else if(startValid) {
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_start, 5));
+            }
+            else if(endValid) {
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_end, 5));
+            }
+        }
+    }
+
+    private void initToolbar() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_activity);
+        // back button color fix (black -> white)
+        toolbar.setNavigationIcon(R.drawable.ic_arrow_back_white_24dp);
+        setSupportActionBar(toolbar);
+        ActionBar ab = getSupportActionBar();
+        assert ab != null;
+        ab.setDisplayHomeAsUpEnabled(true);
+    }
+
+    private void receiveIntent() {
+        // This fetches the addresses from a bundle and places them in an ArrayList
+        // ArrayList will be used later by GeoCoder
+        Intent mapIntent = getIntent();
+        Bundle mapBundle = mapIntent.getExtras();
+
+        startStop = (Stop) mapBundle.getSerializable("startStop");
+        endStop = (Stop) mapBundle.getSerializable("endStop");
     }
 
     public void getMoreInfo() {
-        System.out.println("in getMoreInfo " + lat1 + " " + lon1);
-        latLng = new LatLng(lat1, lon1);  //used in addMarker below for placing a marker at the Longitude/Latitude spot
-        Geocoder gcd = new Geocoder(this);
-        try {
-            List<Address> list = gcd.getFromLocation(lat1, lon1, 10);
-            if (list != null & list.size() > 0) {
-                country = list.get(0).getCountryName(); //grab country name from GeoCoder data from Google
-                if (country==null)
-                    country = "unknown country";
-                System.out.println("in map getMoreInfo country " + country);
-            }
-            else { //no location found
-                country = "unknown country";
-                System.out.println("in getMoreInfo no location found");
-            }
-        } catch (IOException e) //no geo address found
-        {
-            country = "unknown country";
-            Log.v("in map new test","hhhh");
+        startValid = !(startStop.getStopName().equals("Choose"));
+        endValid = !(endStop.getStopName().equals("Choose"));
+
+        if(startValid) {
+            // used in addMarker below for placing a marker at the Longitude/Latitude spot
+            latLng_start = new LatLng(startStop.getLatitutde(), startStop.getLongitude());
+
+            // puts marker icon at location
+            map.addMarker(new MarkerOptions()
+                    .position(latLng_start)
+                    .snippet("Depart here")
+                    .title(startStop.getStopName())
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN)));
         }
-        // puts marker icon at location
-        map.addMarker(new MarkerOptions()
-                .position(latLng)
-                .title("Depth: " + String.valueOf(eq.getDepth()))
-                .snippet("Country: " + country)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14), 3000, null);
+        if (endValid) {
+            latLng_end = new LatLng(endStop.getLatitutde(), endStop.getLongitude());
+            map.addMarker(new MarkerOptions()
+                    .position(latLng_end)
+                    .snippet("Arrive here")
+                    .title(endStop.getStopName())
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE)));
+        }
     }
-    */
 }

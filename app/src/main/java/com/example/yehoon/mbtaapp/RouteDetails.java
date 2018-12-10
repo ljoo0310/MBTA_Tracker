@@ -39,7 +39,8 @@ public class RouteDetails extends AppCompatActivity {
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
     private boolean isNewRoute;
     private int index;
-    private int initialLoad = 0; // int to check if need initial load
+    private int initEditLoad = 0; // int to check if need initial load
+    private int initSpnRouteLoad = 1; // int to check if FetchRoute needs to initialize spn_route
     private int transitIndex = -1; // to index route spinner
     private Intent intent;
     private Spinner spn_route, spn_start, spn_end;
@@ -52,18 +53,7 @@ public class RouteDetails extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_route_details);
 
-        // check if adding or editing a route
-        intent = getIntent();
-        Bundle bundle = intent.getExtras();
-        assert bundle != null;
-        isNewRoute = bundle.getBoolean("newRoute");
-        // if editing a route, take route & index info
-        if(!isNewRoute) {
-            index = (int) bundle.getInt("index");
-            route = (Route) bundle.getSerializable("route");
-        }
-        transits = (ArrayList<Transit>) bundle.getSerializable("transits");
-
+        receiveIntent();
         initToolbar();
         initTabs();
         initSpinners();
@@ -80,12 +70,35 @@ public class RouteDetails extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            // pressed map icon
             case R.id.action_favorite:
-                Intent mapIntent = new Intent(RouteDetails.this, MapActivity.class);
-                Bundle mapBundle = new Bundle();
-                mapBundle.putSerializable("route", route);
-                mapIntent.putExtras(mapBundle);
-                startActivity(mapIntent);
+                // Check if spinners are properly selected
+                Boolean startSelected = !(spn_start.getSelectedItem().equals("Choose"));
+                Boolean endSelected = !(spn_end.getSelectedItem().equals("Choose"));
+                // no stops are selected, so do not call MapActivity
+                if(!startSelected && !endSelected)
+                    Toast.makeText(RouteDetails.this, "Select at least one stop!", Toast.LENGTH_SHORT).show();
+                // at least one stop is selected, so okay to call MapActivity
+                else {
+                    Intent mapIntent = new Intent(RouteDetails.this, MapActivity.class);
+                    Bundle mapBundle = new Bundle();
+
+                    Stop startStop = new Stop();
+                    String startStopName = spn_start.getSelectedItem().toString();
+                    startStop.setStopName(startStopName);
+                    if (!startStopName.equals("Choose"))
+                        startStop = getStopInfo(startStopName);
+                    Stop endStop = new Stop();
+                    String endStopName = spn_end.getSelectedItem().toString();
+                    endStop.setStopName(endStopName);
+                    if (!endStopName.equals("Choose"))
+                        endStop = getStopInfo(endStopName);
+
+                    mapBundle.putSerializable("startStop", startStop);
+                    mapBundle.putSerializable("endStop", endStop);
+                    mapIntent.putExtras(mapBundle);
+                    startActivity(mapIntent);
+                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -103,60 +116,69 @@ public class RouteDetails extends AppCompatActivity {
             String transitID = (String) params[0];
             int transitIndex = (int) params[1];
             String routeNewEdit = (String) params[2];
+
             // Set up variables for the try block that need to be closed in the finally block.
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             String routeJSONString = null;
-            try {
-                final String START_BASE_URL = "https://api-v3.mbta.com/stops?";
-                final String API_KEY = "api_key";
-                final String ROUTE = "filter[route]";
 
-                // Build up your query URI, limiting results to 10 items and printed movies.
-                Uri builtURI = Uri.parse(START_BASE_URL).buildUpon()
-                        .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
-                        .appendQueryParameter(ROUTE, transitID)
-                        .build();
+            // init for spinners
+            if(transitID == null) {
+                String[] emptyJSONPair = new String[]{null, null, null, null};
+                return emptyJSONPair;
+            }
+            else {
+                try {
+                    final String START_BASE_URL = "https://api-v3.mbta.com/stops?";
+                    final String API_KEY = "api_key";
+                    final String ROUTE = "filter[route]";
 
-                URL requestURL = new URL(builtURI.toString());
+                    // Build up your query URI, limiting results to 10 items and printed movies.
+                    Uri builtURI = Uri.parse(START_BASE_URL).buildUpon()
+                            .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
+                            .appendQueryParameter(ROUTE, transitID)
+                            .build();
 
-                // Open the network connection.
-                urlConnection = (HttpURLConnection) requestURL.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
+                    URL requestURL = new URL(builtURI.toString());
 
-                // Get the InputStream.
-                InputStream inputStream = urlConnection.getInputStream();
+                    // Open the network connection.
+                    urlConnection = (HttpURLConnection) requestURL.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
 
-                // Read the response string into a StringBuilder.
-                StringBuilder builder = new StringBuilder();
+                    // Get the InputStream.
+                    InputStream inputStream = urlConnection.getInputStream();
 
-                reader = new BufferedReader(new InputStreamReader(inputStream));
+                    // Read the response string into a StringBuilder.
+                    StringBuilder builder = new StringBuilder();
 
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // but it does make debugging a *lot* easier if you print out the completed buffer for debugging.
-                    builder.append(line + "\n");
-                    publishProgress();
-                }
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
 
-                if (builder.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    // return null;
-                    return null;
-                }
-                routeJSONString = builder.toString();
-            } catch (IOException e) { // Catch errors.
-                e.printStackTrace();
-            } finally { // Close the connections.
-                if (urlConnection != null)
-                    urlConnection.disconnect();
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                        // but it does make debugging a *lot* easier if you print out the completed buffer for debugging.
+                        builder.append(line + "\n");
+                        publishProgress();
+                    }
+
+                    if (builder.length() == 0) {
+                        // Stream was empty.  No point in parsing.
+                        // return null;
+                        return null;
+                    }
+                    routeJSONString = builder.toString();
+                } catch (IOException e) { // Catch errors.
+                    e.printStackTrace();
+                } finally { // Close the connections.
+                    if (urlConnection != null)
+                        urlConnection.disconnect();
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -167,82 +189,110 @@ public class RouteDetails extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String[] s) {
-            try {
-                String routeJSONString = s[0];
+            String routeJSONString = s[0];
+
+            // init for spinners
+            if(routeJSONString == null) {
+                initSpnRoute();
+            }
+            else {
                 String transitID = s[1];
                 int transitIndex = Integer.parseInt(s[2]);
                 String routeNewEdit = s[3];
+                try {
+                    // Convert the response into a JSON object.
+                    JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
+                    // Get the JSONArray of book items.
+                    JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of routes
 
-                // Convert the response into a JSON object.
-                JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
-                // Get the JSONArray of book items.
-                JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of routes
+                    // reset stops list
+                    stops = new ArrayList<>();
 
-                // reset stops list
-                stops = new ArrayList<>();
-
-                // Initialize iterator and results fields.
-                int stopIndex, increment;
-                // if Green Line - D, do reverse order
-                if(transitID.equals("Green-D")) {
-                    stopIndex = itemsArray.length() - 1;
-                    increment = -1;
-                }
-                // do proper order otherwise
-                else {
-                    stopIndex = 0;
-                    increment = 1;
-                }
-                // if Green Line - D, then reverse order
-                for(int i = 0; i < itemsArray.length(); i++) {
-                    // Get the current item information.
-                    JSONObject dataObject = itemsArray.getJSONObject(stopIndex);
-                    JSONObject attributeObject = dataObject.getJSONObject("attributes");
-                    String name = attributeObject.getString("name");
-                    String id = dataObject.getString("id");
-                    double latitude = attributeObject.getDouble("latitude");
-                    double longitude = attributeObject.getDouble("longitude");
-
-                    Stop stop = new Stop();
-                    stop.setStopName(name);
-                    stop.setStopID(id);
-                    stop.setLatitutde(latitude);
-                    stop.setLongitude(longitude);
-                    stops.add(stop);
-                    stopIndex += increment;
-                }
-
-                // get stop names
-                ArrayList<String> str_stops = new ArrayList<>();
-                str_stops.add("Choose");
-                for(int i = 0; i < stops.size(); i++)
-                    str_stops.add(stops.get(i).getStopName());
-
-                // create new adapters
-                adapterStart.clear();
-                adapterStart.addAll(str_stops);
-                adapterEnd.clear();
-                adapterEnd.addAll(str_stops);
-
-                if(routeNewEdit.equals("edit")){
-                    int startIndex = -1, endIndex = -1;
-                    for (int i = 0; i < stops.size(); i++) {
-                        if (stops.get(i).getStopID().equals(route.getStartID()))
-                            startIndex = i;
-                        if (stops.get(i).getStopID().equals(route.getEndID()))
-                            endIndex = i;
+                    // Initialize iterator and results fields.
+                    int stopIndex, increment;
+                    // if Green Line - D, do reverse order
+                    if(transitID.equals("Green-D")) {
+                        stopIndex = itemsArray.length() - 1;
+                        increment = -1;
                     }
-                    spn_route.setSelection(transitIndex + 1);
-                    spn_start.setSelection(startIndex + 1);
-                    spn_end.setSelection(endIndex + 1);
-                    initialLoad = 1;
+                    // do proper order otherwise
+                    else {
+                        stopIndex = 0;
+                        increment = 1;
+                    }
+                    // if Green Line - D, then reverse order
+                    for(int i = 0; i < itemsArray.length(); i++) {
+                        // Get the current item information.
+                        JSONObject dataObject = itemsArray.getJSONObject(stopIndex);
+                        JSONObject attributeObject = dataObject.getJSONObject("attributes");
+                        String name = attributeObject.getString("name");
+                        String id = dataObject.getString("id");
+                        double latitude = attributeObject.getDouble("latitude");
+                        double longitude = attributeObject.getDouble("longitude");
+
+                        Stop stop = new Stop();
+                        stop.setStopName(name);
+                        stop.setStopID(id);
+                        stop.setLatitutde(latitude);
+                        stop.setLongitude(longitude);
+                        stops.add(stop);
+                        stopIndex += increment;
+                    }
+
+                    // get stop names
+                    ArrayList<String> str_stops = new ArrayList<>();
+                    str_stops.add("Choose");
+                    for(int i = 0; i < stops.size(); i++)
+                        str_stops.add(stops.get(i).getStopName());
+
+                    // create new adapters
+                    adapterStart.clear();
+                    adapterStart.addAll(str_stops);
+                    adapterEnd.clear();
+                    adapterEnd.addAll(str_stops);
+
+                    if(routeNewEdit.equals("edit")){
+                        int startIndex = -1, endIndex = -1;
+                        for (int i = 0; i < stops.size(); i++) {
+                            if (stops.get(i).getStopID().equals(route.getStartID()))
+                                startIndex = i;
+                            if (stops.get(i).getStopID().equals(route.getEndID()))
+                                endIndex = i;
+                        }
+                        spn_route.setSelection(transitIndex + 1);
+                        spn_start.setSelection(startIndex + 1);
+                        spn_end.setSelection(endIndex + 1);
+                        initEditLoad = 1;
+                    }
+                    Log.d("LUKE", "before initSpnRouteLoad = " + initSpnRouteLoad);
+                    if(initSpnRouteLoad > 0) {
+                        Log.d("LUKE", "calling initSpnRoute()");
+                        initSpnRoute();
+                        Log.d("LUKE", "called initSpnRoute()");
+                        initSpnRouteLoad--;
+                        Log.d("LUKE", "after initSpnRouteLoad = " + initSpnRouteLoad);
+                    }
+                } catch (Exception e){
+                    // If onPostExecute does not receive a proper JSON string,
+                    // update the UI to show failed results.
+                    e.printStackTrace();
                 }
-            } catch (Exception e){
-                // If onPostExecute does not receive a proper JSON string,
-                // update the UI to show failed results.
-                e.printStackTrace();
             }
         }
+    }
+
+    private void receiveIntent() {
+        // check if adding or editing a route
+        intent = getIntent();
+        Bundle bundle = intent.getExtras();
+        assert bundle != null;
+        isNewRoute = bundle.getBoolean("newRoute");
+        // if editing a route, take route & index info
+        if(!isNewRoute) {
+            index = (int) bundle.getInt("index");
+            route = (Route) bundle.getSerializable("route");
+        }
+        transits = (ArrayList<Transit>) bundle.getSerializable("transits");
     }
 
     private void initToolbar() {
@@ -291,19 +341,19 @@ public class RouteDetails extends AppCompatActivity {
 
     private void initSpinners() {
         // initialize spinners
-        spn_route = (Spinner)findViewById(R.id.spn_route);
-        spn_start = (Spinner)findViewById(R.id.spn_start);
-        spn_end = (Spinner)findViewById(R.id.spn_end);
+        spn_route = (Spinner) findViewById(R.id.spn_route);
+        spn_start = (Spinner) findViewById(R.id.spn_start);
+        spn_end = (Spinner) findViewById(R.id.spn_end);
 
         // get stop names
         ArrayList<String> str_transits = new ArrayList<>();
         str_transits.add("Choose");
-        for(int i = 0; i < transits.size(); i++) {
+        for (int i = 0; i < transits.size(); i++) {
             str_transits.add(transits.get(i).getTransitName());
         }
         // temporary string arrays for spinner initializations
         // use ArrayLists in order to use adapter.clear()
-        ArrayList<String> temp_array = new ArrayList<String>(){
+        ArrayList<String> temp_array = new ArrayList<String>() {
             {
                 add("Choose");
             }
@@ -328,22 +378,30 @@ public class RouteDetails extends AppCompatActivity {
         spn_end.setAdapter(adapterEnd);
 
         // adding a new route
-        if(isNewRoute) {
+        if (isNewRoute) {
             spn_start.setEnabled(false);
             spn_end.setEnabled(false);
+            // initialization for spn_route listener when no editing route
+            Log.d("LUKE", "calling FetchStops for new route");
+            new FetchStops().execute(null, -1, null);
         }
         // editing an existing route
         else {
-            for(int i = 0; i < transits.size(); i++) {
+            for (int i = 0; i < transits.size(); i++) {
                 editTransitID = transits.get(i).getTransitID();
-                if(editTransitID.equals(route.getTransitID())) {
+                if (editTransitID.equals(route.getTransitID())) {
                     transitIndex = i;
                     break;
                 }
             }
+            // initialization for spn_route listener and editing route
+            Log.d("LUKE", "calling FetchStops for editing route");
             new FetchStops().execute(editTransitID, transitIndex, "edit");
         }
+    }
 
+    private void initSpnRoute() {
+        Log.d("LUKE", "initSpnRoute called");
         spn_route.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -354,20 +412,22 @@ public class RouteDetails extends AppCompatActivity {
                     spn_end.setSelection(0);
                 }
                 else {
+                    Log.d("LUKE", "start end spinners enabled");
                     spn_start.setEnabled(true);
                     spn_end.setEnabled(true);
                     String transit = transits.get(spn_route.getSelectedItemPosition() - 1)
                             .getTransitID(); // do -1 for "Choose" value
-                    if(initialLoad == 0) { // carry on regular stops update
+                    if(initEditLoad == 0) { // carry on regular stops update
+                        Log.d("LUKE", "initEditLoad = 0");
                         spn_start.setSelection(0);
                         spn_end.setSelection(0);
+                        Log.d("LUKE", "FetchStops for new");
                         new FetchStops().execute(transit, 0, "new");
                     }
                     else // initial load of an editing route, so don't do regular stops update
-                        initialLoad--;
+                        initEditLoad--;
                 }
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {}
         });
@@ -379,7 +439,6 @@ public class RouteDetails extends AppCompatActivity {
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 Boolean routeSelected = !(spn_route.getSelectedItem().equals("Choose"));
                 Boolean startSelected = !(spn_start.getSelectedItem().equals("Choose"));
                 Boolean endSelected = !(spn_end.getSelectedItem().equals("Choose"));
@@ -415,5 +474,15 @@ public class RouteDetails extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private Stop getStopInfo(String stopName) {
+        for (int i = 0; i < stops.size(); i++) {
+            Stop stop = stops.get(i);
+            if (stop.getStopName().equals(stopName))
+                return stop;
+        }
+        // SHOULD NOT REACH HERE
+        return new Stop();
     }
 }

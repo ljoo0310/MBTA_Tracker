@@ -43,7 +43,7 @@
         </activity>
         <activity
             android:name=".MapActivity"
-            android:parentActivityName=".MainActivity"> <!-- needed for up link to parent activity -->
+            android:parentActivityName=".RouteDetails"> <!-- needed for up link to parent activity -->
         </activity>
 
         <uses-library
