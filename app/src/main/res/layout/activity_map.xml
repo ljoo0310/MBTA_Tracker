@@ -39,7 +39,7 @@
         android:layout_marginTop="8dp"
         map:cameraTargetLat="42.3355"
         map:cameraTargetLng="-71.1685"
-        map:cameraTilt="45"
+        map:cameraTilt="60"
         map:cameraZoom="3"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintEnd_toEndOf="parent"

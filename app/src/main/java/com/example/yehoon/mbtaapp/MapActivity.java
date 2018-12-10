@@ -72,13 +72,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 builder.include(latLng_start);
                 builder.include(latLng_end);
                 LatLngBounds bound = builder.build();
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bound, 75));
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bound, 100));
             }
             else if(startValid) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_start, 5));
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_start, 16));
             }
             else if(endValid) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_end, 5));
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng_end, 16));
             }
         }
     }

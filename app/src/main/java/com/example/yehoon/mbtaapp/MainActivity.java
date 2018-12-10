@@ -2,8 +2,11 @@ package com.example.yehoon.mbtaapp;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -75,9 +78,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(!transitsLoaded) {
+                if(!transitsLoaded)
                     Toast.makeText(MainActivity.this, "Transits not loaded yet...\nPlease wait and try again", Toast.LENGTH_SHORT).show();
-                }
                 else {
                     Intent intent = new Intent(MainActivity.this, RouteDetails.class);
                     Bundle bundle = new Bundle();
@@ -246,8 +248,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .appendQueryParameter(MAX_RESULTS, "4")
                         .build();
 
-                //URL requestURL = new URL(builtURI.toString());
-                URL requestURL = new URL("https://api-v3.mbta.com/routes?type=0&sort=long_name&page[limit]=4");
+                URL requestURL = new URL(builtURI.toString());
 
                 // Open the network connection.
                 urlConnection = (HttpURLConnection) requestURL.openConnection();
