@@ -1,11 +1,13 @@
 package com.example.yehoon.mbtaapp;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -31,6 +34,7 @@ public class ScheduleFragment extends Fragment {
     private RecyclerView recyclerView;
     private TextView tv_noTimesFound, tv_progress;
     private TimeAdapter recyclerViewAdapter;
+    private OnDataPass dataPasser;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -40,6 +44,16 @@ public class ScheduleFragment extends Fragment {
         initView(rootView);
 
         return rootView;
+    }
+
+    public interface OnDataPass {
+        public void onDataPass(ArrayList<String> dataDepart, ArrayList<String> dataArrive);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        dataPasser = (OnDataPass) context;
     }
 
     private void setupRecyclerView(View rootView) {
@@ -64,7 +78,14 @@ public class ScheduleFragment extends Fragment {
     private void updateRecyclerView() {
         ArrayList<String> adapterDepartureTimes = new ArrayList<>();
         ArrayList<String> adapterArrivalTimes = new ArrayList<>();
-        for(int i = 0; i < departureTimes.size(); i++) {
+        int size = 0;
+        if(departureTimes.size() > arrivalTimes.size()) {
+            size = arrivalTimes.size();
+        }
+        else {
+            size = departureTimes.size();
+        }
+        for(int i = 0; i < size; i++) {
             adapterDepartureTimes.add(departureTimes.get(i).getTime());
             adapterArrivalTimes.add(arrivalTimes.get(i).getTime());
         }
@@ -73,9 +94,21 @@ public class ScheduleFragment extends Fragment {
         if (departureTimes.size() == 0) {
             recyclerView.setVisibility(View.GONE);
             tv_noTimesFound.setVisibility(View.VISIBLE);
-        } else
+        } else {
             recyclerView.setVisibility(View.VISIBLE);
             tv_noTimesFound.setVisibility(View.GONE);
+        }
+
+        // passing data back to RouteDetails
+        ArrayList<String> dataDepart = new ArrayList<>();
+        ArrayList<String> dataArrive = new ArrayList<>();
+        int i = 0;
+        while(i < departureTimes.size()) {
+            dataDepart.add(departureTimes.get(i).getTime());
+            dataArrive.add(arrivalTimes.get(i).getTime());
+            i++;
+        }
+        dataPasser.onDataPass(dataDepart, dataArrive);
     }
 
     public void updateTimes(String transitID, String startStopID, String endStopID, String directionID) {
@@ -136,9 +169,6 @@ public class ScheduleFragment extends Fragment {
             String startStopID = (String) params[4];
             String endStopID = (String) params[5];
 
-            int hour = Integer.parseInt(minTime.substring(0, 2)) + 1;
-            String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
-
             // Set up variables for the try block that need to be closed in the finally block.
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -151,7 +181,6 @@ public class ScheduleFragment extends Fragment {
                 final String DATE = "filter[date]";
                 final String DIRECTION = "filter[direction_id]";
                 final String MIN_TIME = "filter[min_time]";
-                final String MAX_TIME = "filter[max_time]";
                 final String ROUTE = "filter[route]";
                 final String STOP = "filter[stop]";
 
@@ -162,7 +191,6 @@ public class ScheduleFragment extends Fragment {
                         .appendQueryParameter(DATE, date)
                         .appendQueryParameter(DIRECTION, directionID)
                         .appendQueryParameter(MIN_TIME, minTime)
-                        .appendQueryParameter(MAX_TIME, maxTime)
                         .appendQueryParameter(ROUTE, route)
                         .appendQueryParameter(STOP, startStopID)
                         .build();
@@ -232,7 +260,7 @@ public class ScheduleFragment extends Fragment {
 
                 ArrayList<Time> times1 = new ArrayList<>(), times2 = new ArrayList<>();
                 int stopSequence1 = 0, stopSequence2 = 0;
-                for(int i = 0; i < itemsArray.length(); i++) {
+                for(int i = 0; i < itemsArray.length() && times1.size() < 15 && times2.size() < 15; i++) {
                     // Get the current item information.
                     JSONObject dataObject = itemsArray.getJSONObject(i);
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
@@ -242,6 +270,9 @@ public class ScheduleFragment extends Fragment {
 
                     String str_time = attributeObject.getString("departure_time");
                     String tripID = tripDataObject.getString("id");
+                    if(tripID.length() > 8) {
+                        tripID = tripID.substring(0, 8);
+                    }
                     int stopSequence = attributeObject.getInt("stop_sequence");
                     if(stopSequence1 == 0) {
                         stopSequence1 = stopSequence;
@@ -253,24 +284,16 @@ public class ScheduleFragment extends Fragment {
                     time.setTIme(str_time.substring(11, 16));
                     time.setTripID(tripID);
 
-                    if(stopSequence == stopSequence1)
+                    if (stopSequence == stopSequence1)
                         times1.add(time);
-                    else if(stopSequence == stopSequence2)
+                    else if (stopSequence == stopSequence2)
                         times2.add(time);
                 }
-                ArrayList<Time> times = new ArrayList<>();
-                if(directionID.equals("Eastbound")) {
-                    if(stopSequence1 < stopSequence2)
-                        times = times1;
-                    else
-                        times = times2;
-                }
-                else if(directionID.equals("Westbound")) {
-                    if(stopSequence1 < stopSequence2)
-                        times = times2;
-                    else
-                        times = times1;
-                }
+                ArrayList<Time> times;
+                if(stopSequence1 < stopSequence2)
+                    times = times1;
+                else
+                    times = times2;
                 departureTimes = times;
                 tv_progress.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
@@ -306,10 +329,10 @@ public class ScheduleFragment extends Fragment {
             String minTime = (String) params[2];
             String route = (String) params[3];
             String stop = (String) params[4];
-
+            /*
             int hour = Integer.parseInt(minTime.substring(0, 2)) + 2;
             String maxTime = Integer.toString(hour) + minTime.substring(2, 5);
-
+            */
             // Set up variables for the try block that need to be closed in the finally block.
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -322,7 +345,6 @@ public class ScheduleFragment extends Fragment {
                 final String DATE = "filter[date]";
                 final String DIRECTION = "filter[direction_id]";
                 final String MIN_TIME = "filter[min_time]";
-                final String MAX_TIME = "filter[max_time]";
                 final String ROUTE = "filter[route]";
                 final String STOP = "filter[stop]";
 
@@ -333,7 +355,7 @@ public class ScheduleFragment extends Fragment {
                         .appendQueryParameter(DATE, date)
                         .appendQueryParameter(DIRECTION, directionID)
                         .appendQueryParameter(MIN_TIME, minTime)
-                        .appendQueryParameter(MAX_TIME, maxTime)
+                        //.appendQueryParameter(MAX_TIME, maxTime)
                         .appendQueryParameter(ROUTE, route)
                         .appendQueryParameter(STOP, stop)
                         .build();
@@ -393,10 +415,9 @@ public class ScheduleFragment extends Fragment {
                 JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
                 // Get the JSONArray of book items.
                 JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of times
-
                 arrivalTimes = new ArrayList<>();
-                int index = 0, departureTimeCounter = 0;
-                while(departureTimeCounter < departureTimes.size()) {
+                int index = 0;
+                while(arrivalTimes.size() < departureTimes.size()) {
                     // Get the current item information.
                     JSONObject dataObject = itemsArray.getJSONObject(index);
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
@@ -404,15 +425,20 @@ public class ScheduleFragment extends Fragment {
                     JSONObject tripObject = relationshipsObject.getJSONObject("trip");
                     JSONObject tripDataObject = tripObject.getJSONObject("data");
 
-                    String str_time = attributeObject.getString("arrival_time");
+                    String str_time = attributeObject.getString("arrival_time").substring(11, 16);
                     String tripID = tripDataObject.getString("id");
+                    if(tripID.length() > 8)
+                        tripID = tripID.substring(0, 8);
 
-                    if(tripID.equals(departureTimes.get(departureTimeCounter).getTripID())) {
-                        Time time = new Time();
-                        time.setTIme(str_time.substring(11, 16));
-                        time.setTripID(tripID);
-                        arrivalTimes.add(time);
-                        departureTimeCounter++;
+                    for(int i = 0; i < departureTimes.size(); i++) {
+                        if(tripID.equals(departureTimes.get(i).getTripID())) {
+                            Time time = new Time();
+                            time.setTIme(str_time);
+                            time.setTripID(tripID);
+                            arrivalTimes.add(time);
+                            Log.d("LUKE", "ScheduleFragment: arrivalTime & departureTime match found!");
+                            break;
+                        }
                     }
                     index++;
                 }

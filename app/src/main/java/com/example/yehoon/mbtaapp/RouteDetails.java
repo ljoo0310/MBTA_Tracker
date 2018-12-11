@@ -32,10 +32,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RouteDetails extends AppCompatActivity {
+public class RouteDetails extends AppCompatActivity implements ScheduleFragment.OnDataPass {
     private List<Stop> stops;
     private List<Transit> transits = new ArrayList<>();
     private ArrayAdapter<String> adapterRoute, adapterStart, adapterEnd;
+    private ArrayList<String> departTimes, arriveTimes;
     private boolean isNewRoute;
     private int index, routePosition, startPosition, endPosition;
     private int initEditLoad = 0; // int to check if need initial load
@@ -103,6 +104,12 @@ public class RouteDetails extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onDataPass(ArrayList<String> dataDepart, ArrayList<String> dataArrive) {
+        departTimes = dataDepart;
+        arriveTimes = dataArrive;
     }
 
     private class FetchStops extends AsyncTask<Object, Void, String[]> {
@@ -493,6 +500,8 @@ public class RouteDetails extends AppCompatActivity {
                     bundle.putString("transitID", transitID);
                     bundle.putString("startID", startID);
                     bundle.putString("endID", endID);
+                    bundle.putStringArrayList("departTimes", departTimes);
+                    bundle.putStringArrayList("arriveTimes", arriveTimes);
                     intent.putExtras(bundle);
                     setResult(Activity.RESULT_OK, intent);
                     finish();

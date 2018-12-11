@@ -1,6 +1,8 @@
 package com.example.yehoon.mbtaapp;
 
 import android.content.Context;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,17 +10,31 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder> {
+    private ArrayList<String> departTimes, arriveTimes;
     private List<Route> routes;
     private ClickListener clickListener;
     protected Context context;
 
-    public RouteAdapter(Context context, List<Route> routes) {
+    public RouteAdapter(Context context, List<Route> routes, ArrayList<String> departTimes,
+                        ArrayList<String> arriveTimes) {
         this.context = context;
         this.routes = routes;
+        this.departTimes = departTimes;
+        this.arriveTimes = arriveTimes;
     }
 
     public class RouteHolder extends RecyclerView.ViewHolder implements View.OnLongClickListener {
@@ -36,7 +52,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder>
             tv_arrow = (TextView) itemView.findViewById(R.id.tv_arrow);
             tv_endStop = (TextView) itemView.findViewById(R.id.tv_endStop);
 
-            // initialization for hidden portion of row itme
+            // initialization for hidden portion of row item
             linLay_hidden = (LinearLayout) itemView.findViewById(R.id.linLay_hidden);
             tv_departureTime = (TextView) itemView.findViewById(R.id.tv_departureTime);
             tv_arrow2 = (TextView) itemView.findViewById(R.id.tv_arrow2);
@@ -59,7 +75,19 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder>
 
     @Override
     public void onBindViewHolder(final RouteHolder holder, final int position) {
-        // temporary random times
+        // temporary schedule times
+        String tempDeparture = "";
+        String tempArrival = "";
+        for(int i = 0; i < departTimes.size(); i++) {
+            tempDeparture += departTimes.get(i);
+            tempArrival += arriveTimes.get(i);
+            if(i < departTimes.size() - 1) {
+                tempDeparture += "\n";
+                tempArrival += "\n";
+            }
+        }
+        //final String departure = tempDeparture;
+        //final String arrival = tempArrival;
         final String departure = randomTime() + "\n" + randomTime() + "\n" + randomTime();
         final String arrival = randomTime() + "\n" + randomTime() + "\n" + randomTime();
 
@@ -79,7 +107,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder>
         holder.tv_arrivalTime.setVisibility(View.INVISIBLE);
         holder.tv_arrivalTime.setEnabled(false);
         holder.tv_arrivalTime.setText("");
-
+        /*
         holder.linLay_visible.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,6 +137,7 @@ public class RouteAdapter extends RecyclerView.Adapter<RouteAdapter.RouteHolder>
             }
             }
         });
+        */
     }
 
     @Override

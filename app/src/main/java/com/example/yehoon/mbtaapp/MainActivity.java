@@ -2,11 +2,8 @@ package com.example.yehoon.mbtaapp;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,7 +16,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -28,7 +24,6 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +36,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, RouteAdapter.ClickListener {
     private boolean transitsLoaded = false;
+    private ArrayList<String> departTimes = new ArrayList<>(), arriveTimes = new ArrayList<>();
     private List<Transit> transits = new ArrayList<>();
     private List<Route> routes = new ArrayList<>();
     private RecyclerView recyclerView;
@@ -110,14 +106,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int id = item.getItemId();
 
         if (id == R.id.showMap) {
-            Toast.makeText(MainActivity.this, "Show MBTA map!", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.deleteAll) {
-            Toast.makeText(MainActivity.this, "Delete All!", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.reOrder) {
+            Toast.makeText(MainActivity.this, "clicked on showMap!", Toast.LENGTH_SHORT).show();
+            Intent webIntent = new Intent();
+            webIntent.setAction(Intent.ACTION_VIEW);
+            webIntent.setData(Uri.parse("https://www.mbta.com/maps"));
+            if (webIntent.resolveActivity(getPackageManager()) != null) //test to see if input leads to a valid url
+                startActivity(webIntent);
+        } else if (id == R.id.deleteAll)
+            new DatabaseAsync(MainActivity.this).execute("deleteAll", 0, null, null, null, null, null);
+         /*else if (id == R.id.reOrder) {
             Toast.makeText(MainActivity.this, "Re-order routes!", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.about) {
             Toast.makeText(MainActivity.this, "What's the app about?", Toast.LENGTH_SHORT).show();
-        }
+        }*/
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
@@ -133,18 +134,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
-            public void onClick(View view, int position) {}
+            public void onClick(View view, int position) {
+                editRoute(routes.get(position), position);
+            }
 
             @Override
             public void onLongClick(View view, int position) {
-                showActionsDialog(position);
+                deleteRoute(position);
+                Toast.makeText(MainActivity.this, "Deleting route", Toast.LENGTH_SHORT).show();
+                //showActionsDialog(position);
             }
         }));
     }
 
-    private void setupFAB() {
-        // setup floating action button
-
+    private void updateRecyclerView(List<Route> items, RouteAdapter.ClickListener clickListener) {
+        // Get list of routes from doInBackground()
+        routes = items;
+        routeAdapter = new RouteAdapter(getApplicationContext(), routes, departTimes, arriveTimes);
+        routeAdapter.setClickListener(clickListener); //this is important since need MainActivity.this
+        recyclerView.setAdapter(routeAdapter);
     }
 
     public class DatabaseAsync extends AsyncTask<Object, Void, List<Route>> {
@@ -202,6 +210,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Route route = RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().getRoutes().get(position);
                 RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().deleteRoute(route);
             }
+            // delete all routes
+            else if(action.equals("deleteAll")) {
+                RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().dropTheTable();
+            }
 
             // Get routes from database
             List<Route> routeItems = RouteDatabase.getRouteDatabase(getApplicationContext()).routeDao().getRoutes();
@@ -210,11 +222,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         @Override
         protected void onPostExecute(List<Route> items) {
-            // Get list of routes from doInBackground()
-            routes = items;
-            routeAdapter = new RouteAdapter(getApplicationContext(), routes);
-            routeAdapter.setClickListener(clickListener); //this is important since need MainActivity.this
-            recyclerView.setAdapter(routeAdapter);
+
+            updateRecyclerView(items, clickListener);
 
             // show "No routes found!" if empty
             checkListEmptyOrNot();
@@ -379,6 +388,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             String transitID = bundle.getString("transitID");
             String startID = bundle.getString("startID");
             String endID = bundle.getString("endID");
+            departTimes = bundle.getStringArrayList("departTimes");
+            arriveTimes = bundle.getStringArrayList("arriveTimes");
 
             new DatabaseAsync(MainActivity.this).execute("new", position, startName, endName, transitID, startID, endID);
         }
@@ -391,6 +402,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             String transitID = bundle.getString("transitID");
             String startID = bundle.getString("startID");
             String endID = bundle.getString("endID");
+            arriveTimes = bundle.getStringArrayList("arriveTimes");
 
             new DatabaseAsync(MainActivity.this).execute("edit", position, startName, endName, transitID, startID, endID);
         }

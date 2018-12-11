@@ -3,12 +3,8 @@ package com.example.yehoon.mbtaapp;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.util.Log;
-
-import java.util.ArrayList;
 
 public class PagerAdapter extends FragmentStatePagerAdapter {
-    private ArrayList<String> scheduledDepatures, scheduledArrivals;
     private int mNumOfTabs;
     private ScheduleFragment scheduleFragment;
     private PredictionFragment predictionFragment;

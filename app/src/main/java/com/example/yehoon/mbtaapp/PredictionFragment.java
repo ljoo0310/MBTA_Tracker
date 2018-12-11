@@ -73,7 +73,8 @@ public class PredictionFragment extends Fragment {
             recyclerView.setVisibility(View.GONE);
             tv_noTimesFound.setText("There are no prediction times available at the moment.");
             tv_noTimesFound.setVisibility(View.VISIBLE);
-        } else {
+        }
+        else {
             recyclerView.setVisibility(View.VISIBLE);
             tv_noTimesFound.setVisibility(View.GONE);
         }
@@ -94,8 +95,6 @@ public class PredictionFragment extends Fragment {
     }
 
     private void fetchDepartures(String direction, String startStopID, String transitID, String endStopID) {
-        Log.d("LUKE", "calling FetchDepartures()");
-        Log.d("LUKE", "direction = " + direction);
         new FetchDepartures().execute(direction, startStopID, transitID, endStopID);
     }
 
@@ -129,7 +128,6 @@ public class PredictionFragment extends Fragment {
             try {
                 final String START_BASE_URL = "https://api-v3.mbta.com/predictions?";
                 final String API_KEY = "api_key";
-                final String ELEMENTS = "page[limit]";
                 final String SORT = "sort";
                 final String STOP = "filter[stop]";
                 final String ROUTE = "filter[route]";
@@ -137,13 +135,13 @@ public class PredictionFragment extends Fragment {
                 // Build up your query URI, limiting results to 10 items and printed movies.
                 Uri builtURI = Uri.parse(START_BASE_URL).buildUpon()
                         .appendQueryParameter(API_KEY, "0dc3ff9c85fb41a9b6af4ffa33572593")
-                        .appendQueryParameter(ELEMENTS, "10")
                         .appendQueryParameter(SORT, "arrival_time")
                         .appendQueryParameter(STOP, stop)
                         .appendQueryParameter(ROUTE, route)
                         .build();
 
                 URL requestURL = new URL(builtURI.toString());
+                Log.d("LUKE", "PredictionFragment: FetchDepartures - URL = " + builtURI.toString());
 
                 // Open the network connection.
                 urlConnection = (HttpURLConnection) requestURL.openConnection();
@@ -197,8 +195,6 @@ public class PredictionFragment extends Fragment {
             String transitID = s[2];
             String endStopID = s[3];
 
-            Log.d("LUKE", "directionID = " + directionID);
-
             try {
                 // Convert the response into a JSON object.
                 JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
@@ -206,7 +202,7 @@ public class PredictionFragment extends Fragment {
                 JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of times
 
                 ArrayList<Time> times = new ArrayList<>();
-                for(int i = 0; i < itemsArray.length(); i++) {
+                for(int i = 0; i < itemsArray.length() && times.size() < 15; i++) {
                     // Get the current item information.
                     JSONObject dataObject = itemsArray.getJSONObject(i);
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
@@ -215,39 +211,24 @@ public class PredictionFragment extends Fragment {
                     JSONObject tripDataObject = tripObject.getJSONObject("data");
 
                     String directionID_recv = Integer.toString(attributeObject.getInt("direction_id"));
-                    Log.d("LUKE", "directionID_recv = " + directionID_recv);
                     String tripID = tripDataObject.getString("id");
+                    if(tripID.length() > 8)
+                        tripID = tripID.substring(0, 8);
 
                     if(directionID.equals(directionID_recv)) {
                         String str_time = attributeObject.getString("departure_time");
                         if(str_time.length() < 5)
                             str_time = attributeObject.getString("arrival_time");
                         str_time = str_time.substring(11, 16);
-                        Log.d("LUKE", "FetchDepartures: str_time = " + str_time);
                         Time time = new Time();
                         time.setTIme(str_time);
                         time.setTripID(tripID);
                         times.add(time);
-
-                        /*
-                        int stopSequence = attributeObject.getInt("stop_sequence");
-                        if(stopSequence1 == 0)
-                            stopSequence1 = stopSequence;
-                        else if(stopSequence2 == 0)
-                            stopSequence2 = stopSequence;
-
-                        if(stopSequence == stopSequence1)
-                            times1.add(time);
-                        else if(stopSequence == stopSequence2)
-                            times2.add(time);
-                        */
                     }
                 }
-
                 departureTimes = times;
                 tv_progress.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
-                Log.d("LUKE", "FetchDepartures done. Calling fetchArrivals()");
                 fetchArrivals(directionID, transitID, endStopID);
             } catch (Exception e){
                 // If onPostExecute does not receive a proper JSON string,
@@ -262,7 +243,7 @@ public class PredictionFragment extends Fragment {
         }
     }
 
-    private class FetchArrivals extends AsyncTask<Object, Integer, String[]> {
+    private class FetchArrivals extends AsyncTask<Object, Integer, String> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -274,8 +255,7 @@ public class PredictionFragment extends Fragment {
         }
 
         @Override
-        protected String[] doInBackground(Object... params) {
-            Log.d("LUKE", "FetchArrivals - doInBG");
+        protected String doInBackground(Object... params) {
             String directionID = (String) params[0];
             String stop = (String) params[1];
             String route = (String) params[2];
@@ -301,7 +281,7 @@ public class PredictionFragment extends Fragment {
                         .build();
 
                 URL requestURL = new URL(builtURI.toString());
-                Log.d("LUKE", "FetchArrivals - url = " + builtURI.toString());
+                Log.d("LUKE", "PredictionFragment: FetchArrivals - URL = " + builtURI.toString());
 
                 // Open the network connection.
                 urlConnection = (HttpURLConnection) requestURL.openConnection();
@@ -343,58 +323,41 @@ public class PredictionFragment extends Fragment {
                     }
                 }
             }
-            String[] JSONPair = new String[]{routeJSONString, directionID};
-            return JSONPair;
+            return routeJSONString;
         }
 
         @Override
-        protected void onPostExecute(String[] s) {
-            Log.d("LUKE", "FetchArrivals - postExec");
-            String routeJSONString = s[0];
-            String directionID = s[1];
+        protected void onPostExecute(String s) {
+            String routeJSONString = s;
 
             try {
                 // Convert the response into a JSON object.
                 JSONObject jsonObject = new JSONObject(routeJSONString); //get top level object
-                Log.d("LUKE", "FetchArrivals - got jsonObject");
                 // Get the JSONArray of book items.
                 JSONArray itemsArray = jsonObject.getJSONArray("data"); // array of times
-                Log.d("LUKE", "FetchArrivals - got itemsArray");
-                Log.d("LUKE", "FetchArrivals - itemsArray.length() = " + itemsArray.length());
-
                 arrivalTimes = new ArrayList<>();
-                int index = 0, departureTimeCounter = 0;
-                Log.d("LUKE", "FetchArrivals - departureTimes.size() = " + departureTimes.size());
-                while(departureTimeCounter < departureTimes.size()) {
-                    Log.d("LUKE", "FetchArrivals - index(counter) = " + index);
+                int index = 0;
+                while(arrivalTimes.size() < departureTimes.size()) {
                     // Get the current item information.
                     JSONObject dataObject = itemsArray.getJSONObject(index);
-                    Log.d("LUKE", "FetchArrivals - got dataObject");
                     JSONObject attributeObject = dataObject.getJSONObject("attributes");
-                    Log.d("LUKE", "FetchArrivals - got attributeObject");
                     JSONObject relationshipsObject = dataObject.getJSONObject("relationships");
-                    Log.d("LUKE", "FetchArrivals - got relationshipsObject");
                     JSONObject tripObject = relationshipsObject.getJSONObject("trip");
-                    Log.d("LUKE", "FetchArrivals - got tripObject");
                     JSONObject tripDataObject = tripObject.getJSONObject("data");
-                    Log.d("LUKE", "FetchArrivals - got tripDataObject");
 
                     String tripID = tripDataObject.getString("id");
-                    Log.d("LUKE", "FetchArrivals - tripID = " + tripID);
-                    Log.d("LUKE", "FetchArrivals - departTripID = " + departureTimes.get(departureTimeCounter).getTripID());
+                    if(tripID.length() > 8)
+                        tripID = tripID.substring(0, 8);
 
-                    if(tripID.equals(departureTimes.get(departureTimeCounter).getTripID())) {
-                        String str_time = attributeObject.getString("arrival_time");
-                        Log.d("LUKE", "FetchArrivals - str_time = " + str_time);
-                        if(str_time.length() < 5)
-                            str_time = attributeObject.getString("departure_time");
-                        str_time = str_time.substring(11, 16);
-                        Log.d("LUKE", "FetchArrivals - str_time.sub(11, 16) = " + str_time);
-                        Time time = new Time();
-                        time.setTIme(str_time);
-                        time.setTripID(tripID);
-                        arrivalTimes.add(time);
-                        departureTimeCounter++;
+                    for(int i = 0; i < departureTimes.size(); i++) {
+                        if(tripID.equals(departureTimes.get(i).getTripID())) {
+                            String str_time = attributeObject.getString("arrival_time").substring(11,16);
+                            Time time = new Time();
+                            time.setTIme(str_time);
+                            time.setTripID(tripID);
+                            arrivalTimes.add(time);
+                            break;
+                        }
                     }
                     index++;
                 }
